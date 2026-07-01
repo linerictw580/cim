@@ -110,7 +110,7 @@ export default function LoginGate({ status, onRefresh }) {
             ) : (
               <p className="gate__hint">完成登入後會自動偵測並進入主畫面。</p>
             )}
-            {!status.inPath && <PathNotice />}
+            {!status.inPath && <PathNotice onDone={onRefresh} />}
           </>
         )}
       </div>

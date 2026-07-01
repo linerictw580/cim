@@ -51,7 +51,7 @@ export default function App() {
       <Sidebar page={page} onNavigate={setPage} />
       <main className="content">
         {page === 'projects' ? (
-          <ProjectsPage auth={auth} onLogout={handleLogout} />
+          <ProjectsPage auth={auth} onLogout={handleLogout} onRefreshAuth={refreshAuth} />
         ) : (
           <SettingsPage />
         )}

@@ -8,7 +8,7 @@ function basename(p) {
   return p.split(/[\\/]/).filter(Boolean).pop() || p
 }
 
-export default function ProjectsPage({ auth, onLogout }) {
+export default function ProjectsPage({ auth, onLogout, onRefreshAuth }) {
   const [projects, setProjects] = useState([])
   const [loaded, setLoaded] = useState(false)
   const [notice, setNotice] = useState(null)
@@ -71,7 +71,7 @@ export default function ProjectsPage({ auth, onLogout }) {
         </button>
       </div>
 
-      {auth && !auth.inPath && <PathNotice />}
+      {auth && !auth.inPath && <PathNotice onDone={onRefreshAuth} />}
 
       <header className="page__header">
         <h1>專案</h1>

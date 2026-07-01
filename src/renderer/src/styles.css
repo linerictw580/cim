@@ -1,18 +1,112 @@
 :root {
   color-scheme: dark;
   font-family: 'Segoe UI', 'Microsoft JhengHei', system-ui, sans-serif;
+
+  --bg: #1e1e1e;
+  --bg-elev: #252526;
+  --bg-sidebar: #181818;
+  --border: #333;
+  --text: #e4e4e4;
+  --text-dim: #9a9a9a;
+  --accent: #d97757;
+  --accent-hover: #e0876b;
 }
 
 * {
   box-sizing: border-box;
 }
 
-body {
-  margin: 0;
-  background: #1e1e1e;
-  color: #e4e4e4;
+html,
+body,
+#root {
+  height: 100%;
 }
 
-.app {
-  padding: 24px;
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+/* ---- 版面 ---- */
+.layout {
+  display: flex;
+  height: 100vh;
+}
+
+/* ---- Sidebar ---- */
+.sidebar {
+  width: 168px;
+  flex-shrink: 0;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 10px;
+  gap: 8px;
+}
+
+.sidebar__brand {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--accent);
+  padding: 4px 10px 12px;
+}
+
+.sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sidebar__item:hover {
+  background: #2a2a2a;
+  color: var(--text);
+}
+
+.sidebar__item.is-active {
+  background: #2f2f2f;
+  color: var(--text);
+}
+
+/* ---- 主內容 ---- */
+.content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.page {
+  padding: 24px 28px;
+}
+
+.page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.page__header h1 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.page__placeholder {
+  color: var(--text-dim);
 }

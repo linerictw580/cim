@@ -7,11 +7,12 @@ function basename(p) {
   return p.split(/[\\/]/).filter(Boolean).pop() || p
 }
 
-export default function ProjectsPage() {
+export default function ProjectsPage({ auth, onLogout }) {
   const [projects, setProjects] = useState([])
   const [loaded, setLoaded] = useState(false)
   const [notice, setNotice] = useState(null)
   const [pendingRemove, setPendingRemove] = useState(null) // 待確認移除的專案
+  const [confirmLogout, setConfirmLogout] = useState(false)
 
   useEffect(() => {
     window.api.getProjects().then((list) => {
@@ -55,8 +56,20 @@ export default function ProjectsPage() {
     }
   }
 
+  const account = [auth?.email, auth?.subscriptionType].filter(Boolean).join(' · ')
+
   return (
     <section className="page">
+      <div className="authbar">
+        <span className="authbar__status">
+          <span className="authbar__dot" />
+          已登入{account ? ` · ${account}` : ''}
+        </span>
+        <button className="authbar__logout" onClick={() => setConfirmLogout(true)}>
+          登出
+        </button>
+      </div>
+
       <header className="page__header">
         <h1>專案</h1>
         <button className="btn btn--primary" onClick={handleAdd}>
@@ -96,6 +109,18 @@ export default function ProjectsPage() {
         confirmText="移除"
         onConfirm={confirmRemove}
         onCancel={() => setPendingRemove(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmLogout}
+        title="登出 Claude"
+        message="登出後需重新執行 claude auth login 才能再次使用，確定要登出嗎？"
+        confirmText="登出"
+        onConfirm={() => {
+          setConfirmLogout(false)
+          onLogout()
+        }}
+        onCancel={() => setConfirmLogout(false)}
       />
     </section>
   )

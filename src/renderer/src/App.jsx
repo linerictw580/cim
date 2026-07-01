@@ -18,6 +18,11 @@ export default function App() {
     refreshAuth()
   }, [refreshAuth])
 
+  const handleLogout = useCallback(async () => {
+    await window.api.logout()
+    await refreshAuth() // 登出後 loggedIn 變 false，自動退回 gate
+  }, [refreshAuth])
+
   // 停在 gate（未登入 / 未安裝）時自動輪詢，偵測到登入完成即進入主畫面
   useEffect(() => {
     if (auth && !auth.loggedIn) {
@@ -45,7 +50,11 @@ export default function App() {
     <div className="layout">
       <Sidebar page={page} onNavigate={setPage} />
       <main className="content">
-        {page === 'projects' ? <ProjectsPage /> : <SettingsPage />}
+        {page === 'projects' ? (
+          <ProjectsPage auth={auth} onLogout={handleLogout} />
+        ) : (
+          <SettingsPage />
+        )}
       </main>
     </div>
   )

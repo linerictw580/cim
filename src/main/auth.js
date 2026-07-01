@@ -1,24 +1,56 @@
 import { exec } from 'child_process'
+import { existsSync } from 'fs'
 import { homedir } from 'os'
+import { join } from 'path'
 import { openTerminalCommand } from './terminal'
 
-// 檢查指令是否存在於 PATH。用 where 的 exit code 判斷（0=找到），
-// 不解析輸出文字 —— 繁中 Windows 的錯誤訊息為 cp950 編碼，在 exec 下會變亂碼而無法比對
-function commandExists(cmd) {
+// 從 registry 讀取最新 PATH（Machine + User）並覆蓋 process.env.PATH。
+// 解決：安裝 claude 後 registry User PATH 已更新，但 explorer / CIM 進程仍是舊 PATH 快照，
+// 導致剛裝好的 claude 偵測不到（需登出/重開機才生效）。主動讀 registry 可繞過此快照。
+function refreshPath() {
   return new Promise((resolve) => {
-    exec(`where ${cmd}`, { timeout: 10000, windowsHide: true }, (err) => resolve(!err))
+    exec(
+      `powershell -NoProfile -Command "[Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')"`,
+      { timeout: 10000, windowsHide: true },
+      (err, stdout) => {
+        const fresh = (stdout || '').trim()
+        if (!err && fresh) process.env.PATH = fresh
+        resolve()
+      }
+    )
   })
+}
+
+// 解析 claude 執行檔的完整路徑（先刷新 PATH，用 where 找；再退回原生安裝已知路徑）
+async function resolveClaudePath() {
+  await refreshPath()
+
+  const fromWhere = await new Promise((resolve) => {
+    exec('where claude', { timeout: 10000, windowsHide: true }, (err, stdout) => {
+      if (err) return resolve(null)
+      const first = (stdout || '')
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter(Boolean)[0]
+      resolve(first || null)
+    })
+  })
+  if (fromWhere) return fromWhere
+
+  // 退回原生安裝的已知路徑（%USERPROFILE%\.local\bin\claude.exe）
+  const known = join(homedir(), '.local', 'bin', 'claude.exe')
+  return existsSync(known) ? known : null
 }
 
 // 查詢 Claude Code 認證狀態
 // 回傳 { installed, loggedIn, email?, subscriptionType?, orgName?, error? }
 export async function getAuthStatus() {
-  // 先確認 claude 是否安裝；未安裝直接回報，避免落入需要解析（可能亂碼）錯誤訊息的路徑
-  const installed = await commandExists('claude')
-  if (!installed) return { installed: false, loggedIn: false }
+  const claudePath = await resolveClaudePath()
+  if (!claudePath) return { installed: false, loggedIn: false }
 
   return new Promise((resolve) => {
-    exec('claude auth status --json', { timeout: 15000, windowsHide: true }, (err, stdout) => {
+    // 用引號包住的絕對路徑執行，避免 CIM 進程 PATH 尚未含 claude 時失敗
+    exec(`"${claudePath}" auth status --json`, { timeout: 15000, windowsHide: true }, (err, stdout) => {
       // 未登入時仍會輸出 JSON（loggedIn:false），故優先解析 stdout
       const text = (stdout || '').trim()
       if (text) {

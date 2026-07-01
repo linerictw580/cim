@@ -49,7 +49,7 @@ export default function ProjectsPage() {
 
   const handleOpen = async (project) => {
     setNotice(null)
-    const res = await window.api.openTerminal(project.path)
+    const res = await window.api.openTerminal(project.path, project.name)
     if (!res.ok) {
       setNotice(`「${project.name}」開啟終端機失敗：${res.error}`)
     }

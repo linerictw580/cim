@@ -37,6 +37,6 @@ export function registerIpc() {
     return true
   })
 
-  // 在指定目錄開啟終端機並執行 claude
-  ipcMain.handle('terminal:open', (event, cwd) => openTerminal(cwd))
+  // 在指定目錄開啟終端機並執行 claude，標題以專案名稱命名
+  ipcMain.handle('terminal:open', (event, cwd, name) => openTerminal(cwd, name))
 }

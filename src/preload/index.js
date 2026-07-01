@@ -21,5 +21,5 @@ contextBridge.exposeInMainWorld('api', {
   setSettings: (settings) => ipcRenderer.invoke('store:setSettings', settings),
 
   // 開啟終端機並執行 claude，回傳 { ok, error? }
-  openTerminal: (cwd) => ipcRenderer.invoke('terminal:open', cwd)
+  openTerminal: (cwd, name) => ipcRenderer.invoke('terminal:open', cwd, name)
 })

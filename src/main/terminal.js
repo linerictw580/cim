@@ -50,13 +50,18 @@ export function openTerminal(cwd, title) {
           windowsHide: false
         })
       } else {
-        // Windows Terminal：-d 指定起始目錄，--title 設定分頁標題，command 保持無分號
+        // Windows Terminal：-d 指定起始目錄，--title 設定分頁標題，
+        // --suppressApplicationTitle 鎖定標題不被 claude 等應用程式改寫，command 保持無分號
         const args = buildRunArgs(shell, command)
-        child = spawn('wt.exe', ['-d', cwd, '--title', name, shell, ...args], {
-          detached: true,
-          stdio: 'ignore',
-          windowsHide: false
-        })
+        child = spawn(
+          'wt.exe',
+          ['-d', cwd, '--title', name, '--suppressApplicationTitle', shell, ...args],
+          {
+            detached: true,
+            stdio: 'ignore',
+            windowsHide: false
+          }
+        )
       }
     } catch (err) {
       resolve({ ok: false, error: err.message })

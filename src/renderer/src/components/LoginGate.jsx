@@ -1,4 +1,41 @@
 import { useState } from 'react'
+import { CopyIcon, CheckIcon } from './icons'
+
+// 官方安裝指令（https://code.claude.com/docs/en/quickstart）
+const INSTALL_COMMANDS = [
+  { label: 'Windows PowerShell', cmd: 'irm https://claude.ai/install.ps1 | iex' },
+  {
+    label: 'Windows CMD',
+    cmd: 'curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd'
+  }
+]
+
+// 指令區塊：monospace 指令 + 一鍵複製
+function CommandBlock({ label, command }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    window.api.copyText(command)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+
+  return (
+    <div className="cmd-block">
+      <div className="cmd-block__label">{label}</div>
+      <div className="cmd-block__row">
+        <code className="cmd-block__code">{command}</code>
+        <button
+          className="cmd-block__copy"
+          onClick={handleCopy}
+          title={copied ? '已複製' : '複製'}
+        >
+          {copied ? <CheckIcon /> : <CopyIcon />}
+        </button>
+      </div>
+    </div>
+  )
+}
 
 // 全畫面認證引導：未安裝 claude 或尚未登入時顯示
 export default function LoginGate({ status, onRefresh }) {
@@ -23,8 +60,12 @@ export default function LoginGate({ status, onRefresh }) {
         {notInstalled ? (
           <>
             <h1 className="gate__title">尚未安裝 Claude Code</h1>
-            <p className="gate__text">請先安裝 Claude Code 才能使用本工具。可透過 npm 安裝：</p>
-            <pre className="gate__code">npm install -g @anthropic-ai/claude-code</pre>
+            <p className="gate__text">
+              請先安裝 Claude Code 才能使用本工具。依你慣用的終端機複製指令安裝：
+            </p>
+            {INSTALL_COMMANDS.map((c) => (
+              <CommandBlock key={c.label} label={c.label} command={c.cmd} />
+            ))}
             <div className="gate__actions">
               <button className="btn btn--primary" onClick={handleRecheck} disabled={checking}>
                 {checking ? '檢查中…' : '重新檢查'}

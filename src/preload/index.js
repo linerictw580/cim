@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, clipboard } from 'electron'
 
 // 透過 contextBridge 暴露安全的 API 給 renderer（不開放 nodeIntegration）
 contextBridge.exposeInMainWorld('api', {
@@ -26,5 +26,8 @@ contextBridge.exposeInMainWorld('api', {
   // Claude Code 認證
   getAuthStatus: () => ipcRenderer.invoke('auth:status'),
   login: () => ipcRenderer.invoke('auth:login'),
-  logout: () => ipcRenderer.invoke('auth:logout')
+  logout: () => ipcRenderer.invoke('auth:logout'),
+
+  // 複製文字到剪貼簿
+  copyText: (text) => clipboard.writeText(text)
 })

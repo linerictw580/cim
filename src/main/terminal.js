@@ -28,12 +28,11 @@ function buildRunArgsWithTitle(shell, command, title) {
   return ['-NoExit', '-Command', `$host.UI.RawUI.WindowTitle = '${psTitle}'; ${command}`]
 }
 
-// 在指定目錄開啟終端機並執行設定中的指令，標題以 title 命名
-// 回傳 { ok: true } 或 { ok: false, error }
-export function openTerminal(cwd, title) {
+// 在指定目錄開啟終端機並執行指定的 command，標題以 title 命名
+// 依 settings 決定終端機類型與 shell。回傳 { ok: true } 或 { ok: false, error }
+export function openTerminalCommand(cwd, title, command) {
   const settings = store.get('settings')
   const shell = settings.shell || 'powershell'
-  const command = settings.command || 'claude'
   const terminal = settings.terminal || 'wt'
   const name = title || cwd
 
@@ -74,4 +73,10 @@ export function openTerminal(cwd, title) {
       resolve({ ok: true })
     })
   })
+}
+
+// 開啟專案終端：執行 settings 中設定的預設指令（預設 claude）
+export function openTerminal(cwd, title) {
+  const command = store.get('settings').command || 'claude'
+  return openTerminalCommand(cwd, title, command)
 }

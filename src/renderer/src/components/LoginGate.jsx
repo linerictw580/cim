@@ -42,8 +42,14 @@ export default function LoginGate({ status, onRefresh }) {
   const [checking, setChecking] = useState(false)
   const notInstalled = !status.installed
 
+  const [loginError, setLoginError] = useState(null)
+
   const handleLogin = async () => {
-    await window.api.login() // 開終端執行 claude auth login
+    setLoginError(null)
+    const res = await window.api.login() // 開終端執行 claude auth login
+    if (res && !res.ok) {
+      setLoginError(`開啟登入終端失敗：${res.error || '未知錯誤'}`)
+    }
   }
 
   const handleRecheck = async () => {
@@ -80,6 +86,7 @@ export default function LoginGate({ status, onRefresh }) {
               點「登入」會開啟終端機執行 <code>claude auth login</code>，請在終端內完成登入。
             </p>
             {status.error && <p className="gate__error">{status.error}</p>}
+            {loginError && <p className="gate__error">{loginError}</p>}
             <div className="gate__actions">
               <button className="btn btn--primary" onClick={handleLogin}>
                 登入

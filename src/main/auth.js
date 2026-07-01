@@ -6,10 +6,12 @@ import { join } from 'path'
 // 從 registry 讀取最新 PATH（Machine + User）並覆蓋 process.env.PATH。
 // 解決：安裝 claude 後 registry User PATH 已更新，但 explorer / CIM 進程仍是舊 PATH 快照，
 // 導致剛裝好的 claude 偵測不到（需登出/重開機才生效）。主動讀 registry 可繞過此快照。
+// 注意：registry 的 Machine PATH 常含未展開的 %SystemRoot% 等，需 ExpandEnvironmentVariables
+// 展開，否則塞進 process.env.PATH 會讓後續靠 PATH 的 spawn（如 powershell）找不到執行檔。
 function refreshPath() {
   return new Promise((resolve) => {
     exec(
-      `powershell -NoProfile -Command "[Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')"`,
+      `powershell -NoProfile -Command "[Environment]::ExpandEnvironmentVariables([Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User'))"`,
       { timeout: 10000, windowsHide: true },
       (err, stdout) => {
         const fresh = (stdout || '').trim()
@@ -77,9 +79,17 @@ export async function getAuthStatus() {
 // 導致剛安裝的 claude 找不到；改用絕對路徑則完全不依賴終端的 PATH。
 export async function login() {
   const claudePath = (await resolveClaudePath()) || 'claude'
+  // 用絕對路徑呼叫 powershell，避免依賴（可能已被 refreshPath 覆蓋的）process.env.PATH
+  const psExe = join(
+    process.env.SystemRoot || 'C:\\Windows',
+    'System32',
+    'WindowsPowerShell',
+    'v1.0',
+    'powershell.exe'
+  )
   return new Promise((resolve) => {
     const child = spawn(
-      'powershell',
+      psExe,
       [
         '-NoExit',
         '-Command',

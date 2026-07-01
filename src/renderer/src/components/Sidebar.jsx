@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+
 const NAV = [
   {
     key: 'projects',
@@ -26,6 +28,12 @@ const NAV = [
 ]
 
 export default function Sidebar({ page, onNavigate }) {
+  const [version, setVersion] = useState('')
+
+  useEffect(() => {
+    window.api.getVersion().then(setVersion)
+  }, [])
+
   return (
     <aside className="sidebar">
       <div className="sidebar__brand">CIM</div>
@@ -41,6 +49,7 @@ export default function Sidebar({ page, onNavigate }) {
           </button>
         ))}
       </nav>
+      {version && <div className="sidebar__version">v{version}</div>}
     </aside>
   )
 }

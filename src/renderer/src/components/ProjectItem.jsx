@@ -60,7 +60,7 @@ export default function ProjectItem({ project, onOpen, onRename, onRemove }) {
         <button
           className="icon-btn icon-btn--danger"
           title="移除"
-          onClick={() => onRemove(project.id)}
+          onClick={() => onRemove(project)}
         >
           <TrashIcon />
         </button>

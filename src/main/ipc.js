@@ -1,8 +1,11 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron'
+import { app, ipcMain, dialog, BrowserWindow } from 'electron'
 import store from './store'
 import { openTerminal } from './terminal'
 
 export function registerIpc() {
+  // 應用程式版本（與 package.json version 同步）
+  ipcMain.handle('app:getVersion', () => app.getVersion())
+
   // 開啟系統選資料夾對話框，回傳選中的絕對路徑（取消則回傳 null）
   ipcMain.handle('dialog:selectFolder', async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender)

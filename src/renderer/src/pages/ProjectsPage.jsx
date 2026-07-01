@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import ProjectItem from '../components/ProjectItem'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 // 從絕對路徑取最後一段作為預設顯示名稱（相容 Windows \ 與 / 分隔）
 function basename(p) {
@@ -10,6 +11,7 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState([])
   const [loaded, setLoaded] = useState(false)
   const [notice, setNotice] = useState(null)
+  const [pendingRemove, setPendingRemove] = useState(null) // 待確認移除的專案
 
   useEffect(() => {
     window.api.getProjects().then((list) => {
@@ -36,8 +38,13 @@ export default function ProjectsPage() {
     persist(projects.map((p) => (p.id === id ? { ...p, name } : p)))
   }
 
-  const handleRemove = (id) => {
-    persist(projects.filter((p) => p.id !== id))
+  const handleRemove = (project) => {
+    setPendingRemove(project)
+  }
+
+  const confirmRemove = () => {
+    persist(projects.filter((p) => p.id !== pendingRemove.id))
+    setPendingRemove(null)
   }
 
   const handleOpen = async (project) => {
@@ -81,6 +88,15 @@ export default function ProjectsPage() {
           ))}
         </ul>
       )}
+
+      <ConfirmDialog
+        open={pendingRemove !== null}
+        title="移除專案"
+        message={`確定要移除「${pendingRemove?.name}」嗎？此操作不會刪除實際資料夾。`}
+        confirmText="移除"
+        onConfirm={confirmRemove}
+        onCancel={() => setPendingRemove(null)}
+      />
     </section>
   )
 }

@@ -1,8 +1,7 @@
-import { exec } from 'child_process'
+import { exec, spawn } from 'child_process'
 import { existsSync } from 'fs'
 import { homedir } from 'os'
 import { join } from 'path'
-import { openTerminalCommand } from './terminal'
 
 // 從 registry 讀取最新 PATH（Machine + User）並覆蓋 process.env.PATH。
 // 解決：安裝 claude 後 registry User PATH 已更新，但 explorer / CIM 進程仍是舊 PATH 快照，
@@ -73,14 +72,34 @@ export async function getAuthStatus() {
 }
 
 // 開啟終端機執行 claude auth login（互動式 OAuth，需在終端內完成）
-export function login() {
-  return openTerminalCommand(homedir(), 'Claude 登入', 'claude auth login')
+// 用絕對路徑 + 直接 spawn 的傳統 powershell 視窗，不經 wt：
+// wt 為 single-instance，會把分頁交給既有（PATH 可能過舊）的 WindowsTerminal 主進程執行，
+// 導致剛安裝的 claude 找不到；改用絕對路徑則完全不依賴終端的 PATH。
+export async function login() {
+  const claudePath = (await resolveClaudePath()) || 'claude'
+  return new Promise((resolve) => {
+    const child = spawn(
+      'powershell',
+      [
+        '-NoExit',
+        '-Command',
+        `$host.UI.RawUI.WindowTitle = 'Claude 登入'; & "${claudePath}" auth login`
+      ],
+      { cwd: homedir(), detached: true, stdio: 'ignore', windowsHide: false }
+    )
+    child.on('error', (err) => resolve({ ok: false, error: err.message }))
+    child.on('spawn', () => {
+      child.unref()
+      resolve({ ok: true })
+    })
+  })
 }
 
-// 登出（非互動，直接清除認證）
-export function logout() {
+// 登出（非互動，直接清除認證）—— 同樣用絕對路徑，避免 PATH 尚未含 claude
+export async function logout() {
+  const claudePath = (await resolveClaudePath()) || 'claude'
   return new Promise((resolve) => {
-    exec('claude auth logout', { timeout: 15000, windowsHide: true }, (err, stdout, stderr) => {
+    exec(`"${claudePath}" auth logout`, { timeout: 15000, windowsHide: true }, (err, stdout, stderr) => {
       resolve({ ok: !err, error: err ? (stderr || err.message).trim() : null })
     })
   })

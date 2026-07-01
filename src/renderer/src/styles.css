@@ -110,3 +110,129 @@ body {
 .page__placeholder {
   color: var(--text-dim);
 }
+
+/* ---- 按鈕 ---- */
+.btn {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-elev);
+  color: var(--text);
+  font-size: 13px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background: #2f2f2f;
+}
+
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.btn--primary:hover {
+  background: var(--accent-hover);
+}
+
+/* ---- 空狀態 ---- */
+.empty {
+  margin-top: 40px;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+/* ---- 專案列表 ---- */
+.project-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.project-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.project-item__main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.project-item__name {
+  font-size: 14px;
+  font-weight: 600;
+  cursor: text;
+}
+
+.project-item__input {
+  font-size: 14px;
+  font-weight: 600;
+  background: #1a1a1a;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 2px 6px;
+  width: 220px;
+}
+
+.project-item__path {
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 480px;
+}
+
+.project-item__actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* ---- 圖示按鈕 ---- */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  background: #333;
+  color: var(--text);
+}
+
+.icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.icon-btn--terminal:hover:not(:disabled) {
+  color: var(--accent);
+}
+
+.icon-btn--danger:hover {
+  color: #e06c6c;
+}

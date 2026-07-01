@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Claude Instance Manager - 快速管理與在終端機開啟 Claude 實例",
   "main": "./out/main/index.js",
-  "author": "",
+  "author": "cim",
   "license": "MIT",
   "scripts": {
     "dev": "electron-vite dev",

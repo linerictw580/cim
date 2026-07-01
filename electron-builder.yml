@@ -1,0 +1,29 @@
+appId: com.cim.claude-instance-manager
+productName: CIM
+directories:
+  output: dist
+  buildResources: build
+# 採排除式規則：保留預設 **/* 讓 electron-builder 自動只納入 production deps，
+# 再排除原始碼與開發用檔案（node_modules 的 devDependencies 會自動被排除）
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!electron-builder.yml'
+  - '!.claude/*'
+  - '!{README.md,MEMORY.md,.gitignore,.editorconfig}'
+win:
+  executableName: CIM
+  target:
+    - nsis
+    - portable
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  artifactName: ${productName}-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+portable:
+  artifactName: ${productName}-${version}-portable.${ext}

@@ -1,5 +1,6 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron'
 import store from './store'
+import { openTerminal } from './terminal'
 
 export function registerIpc() {
   // 開啟系統選資料夾對話框，回傳選中的絕對路徑（取消則回傳 null）
@@ -25,4 +26,7 @@ export function registerIpc() {
     store.set('settings', settings)
     return true
   })
+
+  // 在指定目錄開啟終端機並執行 claude
+  ipcMain.handle('terminal:open', (event, cwd) => openTerminal(cwd))
 }

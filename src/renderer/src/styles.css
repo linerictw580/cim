@@ -145,6 +145,30 @@ body {
   font-size: 14px;
 }
 
+/* ---- 通知列 ---- */
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  background: #3a2320;
+  border: 1px solid #7a4a42;
+  border-radius: 6px;
+  color: #f0c8bf;
+  font-size: 13px;
+}
+
+.notice__close {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
 /* ---- 專案列表 ---- */
 .project-list {
   list-style: none;

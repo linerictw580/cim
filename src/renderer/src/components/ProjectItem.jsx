@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { TerminalIcon, PencilIcon, TrashIcon } from './icons'
 
-export default function ProjectItem({ project, onRename, onRemove }) {
+export default function ProjectItem({ project, onOpen, onRename, onRemove }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(project.name)
 
@@ -49,8 +49,8 @@ export default function ProjectItem({ project, onRename, onRemove }) {
       <div className="project-item__actions">
         <button
           className="icon-btn icon-btn--terminal"
-          title="開啟終端機並執行 claude（階段 4 啟用）"
-          disabled
+          title="開啟終端機並執行 claude"
+          onClick={() => onOpen(project)}
         >
           <TerminalIcon />
         </button>

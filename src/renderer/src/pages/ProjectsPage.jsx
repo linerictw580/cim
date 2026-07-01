@@ -9,6 +9,7 @@ function basename(p) {
 export default function ProjectsPage() {
   const [projects, setProjects] = useState([])
   const [loaded, setLoaded] = useState(false)
+  const [notice, setNotice] = useState(null)
 
   useEffect(() => {
     window.api.getProjects().then((list) => {
@@ -39,6 +40,14 @@ export default function ProjectsPage() {
     persist(projects.filter((p) => p.id !== id))
   }
 
+  const handleOpen = async (project) => {
+    setNotice(null)
+    const res = await window.api.openTerminal(project.path)
+    if (!res.ok) {
+      setNotice(`「${project.name}」開啟終端機失敗：${res.error}`)
+    }
+  }
+
   return (
     <section className="page">
       <header className="page__header">
@@ -48,6 +57,15 @@ export default function ProjectsPage() {
         </button>
       </header>
 
+      {notice && (
+        <div className="notice" role="alert">
+          <span>{notice}</span>
+          <button className="notice__close" onClick={() => setNotice(null)}>
+            ✕
+          </button>
+        </div>
+      )}
+
       {loaded && projects.length === 0 ? (
         <div className="empty">尚未加入任何專案。點右上「新增」選擇資料夾。</div>
       ) : (
@@ -56,6 +74,7 @@ export default function ProjectsPage() {
             <ProjectItem
               key={p.id}
               project={p}
+              onOpen={handleOpen}
               onRename={handleRename}
               onRemove={handleRemove}
             />

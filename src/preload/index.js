@@ -11,5 +11,8 @@ contextBridge.exposeInMainWorld('api', {
 
   // 設定持久化
   getSettings: () => ipcRenderer.invoke('store:getSettings'),
-  setSettings: (settings) => ipcRenderer.invoke('store:setSettings', settings)
+  setSettings: (settings) => ipcRenderer.invoke('store:setSettings', settings),
+
+  // 開啟終端機並執行 claude，回傳 { ok, error? }
+  openTerminal: (cwd) => ipcRenderer.invoke('terminal:open', cwd)
 })

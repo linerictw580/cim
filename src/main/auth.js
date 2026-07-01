@@ -1,5 +1,6 @@
-import { exec, spawn } from 'child_process'
-import { existsSync } from 'fs'
+import { app } from 'electron'
+import { exec } from 'child_process'
+import { existsSync, writeFileSync } from 'fs'
 import { homedir } from 'os'
 import { join } from 'path'
 
@@ -74,34 +75,30 @@ export async function getAuthStatus() {
 }
 
 // 開啟終端機執行 claude auth login（互動式 OAuth，需在終端內完成）
-// 用絕對路徑 + 直接 spawn 的傳統 powershell 視窗，不經 wt：
-// wt 為 single-instance，會把分頁交給既有（PATH 可能過舊）的 WindowsTerminal 主進程執行，
-// 導致剛安裝的 claude 找不到；改用絕對路徑則完全不依賴終端的 PATH。
+// 用 start 保證開出可見視窗（Electron GUI 進程下 detached spawn 不一定開窗），
+// 並把命令寫進暫存 .ps1 檔徹底避開引號問題，claude 以絕對路徑執行（不依賴 PATH）。
 export async function login() {
   const claudePath = (await resolveClaudePath()) || 'claude'
-  // 用絕對路徑呼叫 powershell，避免依賴（可能已被 refreshPath 覆蓋的）process.env.PATH
-  const psExe = join(
-    process.env.SystemRoot || 'C:\\Windows',
-    'System32',
-    'WindowsPowerShell',
-    'v1.0',
-    'powershell.exe'
-  )
+
+  let ps1Path
+  try {
+    ps1Path = join(app.getPath('userData'), 'claude-login.ps1')
+    const script = `$host.UI.RawUI.WindowTitle = 'Claude 登入'\r\n& "${claudePath}" auth login\r\n`
+    writeFileSync(ps1Path, script, 'utf8')
+  } catch (err) {
+    return { ok: false, error: `寫入登入腳本失敗：${err.message}` }
+  }
+
   return new Promise((resolve) => {
-    const child = spawn(
-      psExe,
-      [
-        '-NoExit',
-        '-Command',
-        `$host.UI.RawUI.WindowTitle = 'Claude 登入'; & "${claudePath}" auth login`
-      ],
-      { cwd: homedir(), detached: true, stdio: 'ignore', windowsHide: false }
+    // exec 經 cmd 執行 start：start 會開出獨立可見的 powershell 視窗
+    exec(
+      `start "" powershell -NoExit -ExecutionPolicy Bypass -File "${ps1Path}"`,
+      { windowsHide: true, cwd: homedir() },
+      (err) => {
+        if (err) resolve({ ok: false, error: err.message })
+        else resolve({ ok: true })
+      }
     )
-    child.on('error', (err) => resolve({ ok: false, error: err.message }))
-    child.on('spawn', () => {
-      child.unref()
-      resolve({ ok: true })
-    })
   })
 }
 

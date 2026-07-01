@@ -35,6 +35,86 @@ body {
   height: 100vh;
 }
 
+/* ---- 認證 Gate ---- */
+.gate {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.gate__card {
+  width: 440px;
+  max-width: 100%;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+}
+
+.gate__logo {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+
+.gate__title {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+
+.gate__text {
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin: 0 0 16px;
+}
+
+.gate__text code {
+  background: #1a1a1a;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.gate__code {
+  background: #1a1a1a;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 13px;
+  text-align: left;
+  overflow-x: auto;
+  margin: 0 0 16px;
+}
+
+.gate__error {
+  font-size: 12px;
+  color: #e0876b;
+  background: #3a2320;
+  border: 1px solid #7a4a42;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 0 0 16px;
+  word-break: break-word;
+}
+
+.gate__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.gate__hint {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 16px 0 0;
+}
+
 /* ---- Sidebar ---- */
 .sidebar {
   width: 168px;

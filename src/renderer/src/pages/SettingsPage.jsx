@@ -2,12 +2,20 @@ import { useEffect, useState } from 'react'
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState(null)
+  const [autoLaunch, setAutoLaunch] = useState(false)
 
   useEffect(() => {
     window.api.getSettings().then(setSettings)
+    window.api.getAutoLaunch().then(setAutoLaunch)
   }, [])
 
   if (!settings) return null
+
+  // 開機自動啟動：以 OS 回傳的實際狀態為準
+  const toggleAutoLaunch = async (enabled) => {
+    const applied = await window.api.setAutoLaunch(enabled)
+    setAutoLaunch(applied)
+  }
 
   // 更新單一欄位並即時持久化
   const update = (patch) => {
@@ -74,6 +82,20 @@ export default function SettingsPage() {
             onChange={(e) => update({ command: e.target.value })}
           />
           <p className="field__hint">進入目錄後執行的指令，預設 claude。</p>
+        </div>
+
+        <div className="field">
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              checked={autoLaunch}
+              onChange={(e) => toggleAutoLaunch(e.target.checked)}
+            />
+            開機時自動啟動 CIM
+          </label>
+          <p className="field__hint">
+            登入 Windows 後自動開啟本工具；建議在安裝版啟用。
+          </p>
         </div>
       </div>
     </section>

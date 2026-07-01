@@ -247,7 +247,8 @@ body {
   gap: 8px;
 }
 
-.radio {
+.radio,
+.checkbox {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -255,7 +256,8 @@ body {
   cursor: pointer;
 }
 
-.radio input {
+.radio input,
+.checkbox input {
   accent-color: var(--accent);
 }
 

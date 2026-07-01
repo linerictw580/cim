@@ -6,6 +6,13 @@ export function registerIpc() {
   // 應用程式版本（與 package.json version 同步）
   ipcMain.handle('app:getVersion', () => app.getVersion())
 
+  // 開機自動啟動（真實來源為 OS 登入項設定，不另存 store）
+  ipcMain.handle('app:getAutoLaunch', () => app.getLoginItemSettings().openAtLogin)
+  ipcMain.handle('app:setAutoLaunch', (event, enabled) => {
+    app.setLoginItemSettings({ openAtLogin: enabled })
+    return app.getLoginItemSettings().openAtLogin
+  })
+
   // 開啟系統選資料夾對話框，回傳選中的絕對路徑（取消則回傳 null）
   ipcMain.handle('dialog:selectFolder', async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender)

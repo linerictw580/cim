@@ -5,6 +5,10 @@ contextBridge.exposeInMainWorld('api', {
   // 應用程式版本
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
 
+  // 開機自動啟動
+  getAutoLaunch: () => ipcRenderer.invoke('app:getAutoLaunch'),
+  setAutoLaunch: (enabled) => ipcRenderer.invoke('app:setAutoLaunch', enabled),
+
   // 選資料夾對話框，回傳路徑或 null
   selectFolder: () => ipcRenderer.invoke('dialog:selectFolder'),
 

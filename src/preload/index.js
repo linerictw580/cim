@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('api', {
   getAuthStatus: () => ipcRenderer.invoke('auth:status'),
   login: () => ipcRenderer.invoke('auth:login'),
   logout: () => ipcRenderer.invoke('auth:logout'),
+  addToPath: () => ipcRenderer.invoke('auth:addToPath'),
 
   // 複製文字到剪貼簿
   copyText: (text) => clipboard.writeText(text)

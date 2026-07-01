@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import ProjectItem from '../components/ProjectItem'
 import ConfirmDialog from '../components/ConfirmDialog'
+import PathNotice from '../components/PathNotice'
 
 // 從絕對路徑取最後一段作為預設顯示名稱（相容 Windows \ 與 / 分隔）
 function basename(p) {
@@ -69,6 +70,8 @@ export default function ProjectsPage({ auth, onLogout }) {
           登出
         </button>
       </div>
+
+      {auth && !auth.inPath && <PathNotice />}
 
       <header className="page__header">
         <h1>專案</h1>

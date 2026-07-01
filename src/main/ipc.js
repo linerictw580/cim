@@ -1,7 +1,7 @@
 import { app, ipcMain, dialog, BrowserWindow } from 'electron'
 import store from './store'
 import { openTerminal } from './terminal'
-import { getAuthStatus, login, logout } from './auth'
+import { getAuthStatus, login, logout, addToPath } from './auth'
 
 export function registerIpc() {
   // 應用程式版本（與 package.json version 同步）
@@ -45,4 +45,5 @@ export function registerIpc() {
   ipcMain.handle('auth:status', () => getAuthStatus())
   ipcMain.handle('auth:login', () => login())
   ipcMain.handle('auth:logout', () => logout())
+  ipcMain.handle('auth:addToPath', () => addToPath())
 }

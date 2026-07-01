@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { CopyIcon, CheckIcon } from './icons'
+import PathNotice from './PathNotice'
 
 // 官方安裝指令（https://code.claude.com/docs/en/quickstart）
 const INSTALL_COMMANDS = [
@@ -109,6 +110,7 @@ export default function LoginGate({ status, onRefresh }) {
             ) : (
               <p className="gate__hint">完成登入後會自動偵測並進入主畫面。</p>
             )}
+            {!status.inPath && <PathNotice />}
           </>
         )}
       </div>

@@ -439,6 +439,69 @@ body {
   color: var(--text);
 }
 
+/* ---- PATH 提示 ---- */
+.pathnotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 10px 12px;
+  background: #33291a;
+  border: 1px solid #7a5f36;
+  border-radius: 6px;
+  text-align: left;
+}
+
+.pathnotice__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pathnotice__text {
+  font-size: 12.5px;
+  color: #e6c98a;
+  line-height: 1.5;
+}
+
+.pathnotice__error {
+  font-size: 12px;
+  color: #e0876b;
+  word-break: break-word;
+}
+
+.pathnotice__btn {
+  flex-shrink: 0;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #1a1a1a;
+  font-weight: 600;
+  font-size: 12px;
+  border-radius: 5px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.pathnotice__btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.pathnotice__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pathnotice--ok {
+  display: block;
+  color: #9fca8f;
+  background: #23301f;
+  border-color: #4a6a3f;
+  font-size: 12.5px;
+  padding: 10px 12px;
+}
+
 /* ---- 通知列 ---- */
 .notice {
   display: flex;

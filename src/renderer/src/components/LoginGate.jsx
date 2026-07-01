@@ -43,12 +43,19 @@ export default function LoginGate({ status, onRefresh }) {
   const notInstalled = !status.installed
 
   const [loginError, setLoginError] = useState(null)
+  const [busy, setBusy] = useState(false) // 正在開啟登入終端
+  const [launched, setLaunched] = useState(false) // 已開啟，等待使用者於終端完成登入
 
   const handleLogin = async () => {
     setLoginError(null)
+    setLaunched(false)
+    setBusy(true)
     const res = await window.api.login() // 開終端執行 claude auth login
+    setBusy(false)
     if (res && !res.ok) {
       setLoginError(`開啟登入終端失敗：${res.error || '未知錯誤'}`)
+    } else {
+      setLaunched(true)
     }
   }
 
@@ -88,14 +95,20 @@ export default function LoginGate({ status, onRefresh }) {
             {status.error && <p className="gate__error">{status.error}</p>}
             {loginError && <p className="gate__error">{loginError}</p>}
             <div className="gate__actions">
-              <button className="btn btn--primary" onClick={handleLogin}>
-                登入
+              <button className="btn btn--primary" onClick={handleLogin} disabled={busy}>
+                {busy ? '開啟中…' : '登入'}
               </button>
               <button className="btn" onClick={handleRecheck} disabled={checking}>
                 {checking ? '檢查中…' : '重新檢查'}
               </button>
             </div>
-            <p className="gate__hint">完成登入後會自動偵測並進入主畫面。</p>
+            {launched && !loginError ? (
+              <p className="gate__hint">
+                已開啟登入終端，請在彈出的 PowerShell 視窗完成登入，完成後會自動進入主畫面。
+              </p>
+            ) : (
+              <p className="gate__hint">完成登入後會自動偵測並進入主畫面。</p>
+            )}
           </>
         )}
       </div>

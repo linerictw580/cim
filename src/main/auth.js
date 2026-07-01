@@ -39,9 +39,14 @@ async function resolveClaudePath() {
   })
   if (fromWhere) return fromWhere
 
-  // 退回原生安裝的已知路徑（%USERPROFILE%\.local\bin\claude.exe）
-  const known = join(homedir(), '.local', 'bin', 'claude.exe')
-  return existsSync(known) ? known : null
+  // 退回原生安裝的已知路徑（%USERPROFILE%\.local\bin），launcher 副檔名可能為
+  // .exe / .cmd / .bat 或無副檔名，逐一檢查
+  const binDir = join(homedir(), '.local', 'bin')
+  for (const name of ['claude.exe', 'claude.cmd', 'claude.bat', 'claude']) {
+    const p = join(binDir, name)
+    if (existsSync(p)) return p
+  }
+  return null
 }
 
 // 查詢 Claude Code 認證狀態

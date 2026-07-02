@@ -5,9 +5,11 @@ export default function ProjectItem({ project, onOpen, onRename, onRemove }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(project.name)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [menuStyle, setMenuStyle] = useState(null) // fixed 定位座標，避免被 .content 的 overflow 裁切
   const [windows, setWindows] = useState([]) // 可加 tab 的視窗群組
   const [wtAvailable, setWtAvailable] = useState(true)
   const menuRef = useRef(null)
+  const caretRef = useRef(null)
 
   const commit = () => {
     const name = draft.trim()
@@ -21,15 +23,40 @@ export default function ProjectItem({ project, onOpen, onRename, onRemove }) {
     setEditing(false)
   }
 
-  // 點選單外側時關閉執行選項選單
+  // 點選單外側、捲動或改變視窗大小時關閉選單（fixed 定位在捲動後會與按鈕脫節）
   useEffect(() => {
     if (!menuOpen) return
     const onDocClick = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false)
     }
+    const close = () => setMenuOpen(false)
     document.addEventListener('mousedown', onDocClick)
-    return () => document.removeEventListener('mousedown', onDocClick)
+    window.addEventListener('resize', close)
+    // 捕捉階段監聽，才能收到 .content 容器的捲動
+    window.addEventListener('scroll', close, true)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      window.removeEventListener('resize', close)
+      window.removeEventListener('scroll', close, true)
+    }
   }, [menuOpen])
+
+  // 依 caret 位置與可用空間，計算選單向下或向上展開（fixed 定位，估算高度決定方向）
+  const computeMenuStyle = (list, wt) => {
+    const rect = caretRef.current.getBoundingClientRect()
+    const itemH = 34
+    const sepH = 9
+    let est = 16 + itemH // 內距 +「新視窗」
+    if (wt && list.length > 0) est += sepH + list.length * itemH + sepH + itemH
+    if (!wt) est += 30
+    const right = window.innerWidth - rect.right
+    const spaceBelow = window.innerHeight - rect.bottom
+    if (spaceBelow < est + 8 && rect.top > spaceBelow) {
+      // 下方空間不足且上方較大 → 向上展開
+      return { position: 'fixed', bottom: window.innerHeight - rect.top + 4, top: 'auto', right }
+    }
+    return { position: 'fixed', top: rect.bottom + 4, bottom: 'auto', right }
+  }
 
   // 展開選單前先查詢目前的視窗群組與 tab 能力
   const toggleMenu = async () => {
@@ -40,6 +67,7 @@ export default function ProjectItem({ project, onOpen, onRename, onRemove }) {
       ])
       setWtAvailable(caps.wtAvailable)
       setWindows(list)
+      setMenuStyle(computeMenuStyle(list, caps.wtAvailable))
     }
     setMenuOpen((v) => !v)
   }
@@ -93,6 +121,7 @@ export default function ProjectItem({ project, onOpen, onRename, onRemove }) {
             <TerminalIcon />
           </button>
           <button
+            ref={caretRef}
             className="icon-btn icon-btn--terminal run-split__caret"
             title="執行選項（新視窗 / 加到分頁）"
             onClick={toggleMenu}
@@ -100,7 +129,7 @@ export default function ProjectItem({ project, onOpen, onRename, onRemove }) {
             <ChevronDownIcon />
           </button>
           {menuOpen && (
-            <div className="run-menu">
+            <div className="run-menu" style={menuStyle}>
               <button className="run-menu__item" onClick={() => run({ mode: 'new' })}>
                 新視窗
               </button>

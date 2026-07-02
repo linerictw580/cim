@@ -1,4 +1,4 @@
-import { app, ipcMain, dialog, BrowserWindow } from 'electron'
+import { app, ipcMain, dialog, BrowserWindow, shell } from 'electron'
 import store from './store'
 import { openTerminal } from './terminal'
 import { getAuthStatus, login, logout, addToPath } from './auth'
@@ -52,4 +52,7 @@ export function registerIpc() {
   ipcMain.handle('updater:check', () => checkForUpdate())
   ipcMain.handle('updater:download', () => downloadUpdate())
   ipcMain.handle('updater:install', () => installUpdate())
+
+  // 以系統預設瀏覽器開啟外部連結（portable 版「前往下載」用）
+  ipcMain.handle('shell:openExternal', (event, url) => shell.openExternal(url))
 }

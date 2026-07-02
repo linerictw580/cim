@@ -37,6 +37,9 @@ contextBridge.exposeInMainWorld('api', {
   downloadUpdate: () => ipcRenderer.invoke('updater:download'),
   installUpdate: () => ipcRenderer.invoke('updater:install'),
 
+  // 以系統預設瀏覽器開啟外部連結
+  openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
+
   // 訂閱更新事件；callback 收到 { type, payload }，回傳解除訂閱函式
   onUpdateEvent: (callback) => {
     const channels = [

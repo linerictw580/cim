@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar'
 import LoginGate from './components/LoginGate'
 import ProjectsPage from './pages/ProjectsPage'
 import SettingsPage from './pages/SettingsPage'
+import UpdateBanner from './components/UpdateBanner'
 
 export default function App() {
   const [page, setPage] = useState('projects')
@@ -47,15 +48,18 @@ export default function App() {
   }
 
   return (
-    <div className="layout">
-      <Sidebar page={page} onNavigate={setPage} />
-      <main className="content">
-        {page === 'projects' ? (
-          <ProjectsPage auth={auth} onLogout={handleLogout} onRefreshAuth={refreshAuth} />
-        ) : (
-          <SettingsPage />
-        )}
-      </main>
+    <div className="app-shell">
+      <UpdateBanner />
+      <div className="layout">
+        <Sidebar page={page} onNavigate={setPage} />
+        <main className="content">
+          {page === 'projects' ? (
+            <ProjectsPage auth={auth} onLogout={handleLogout} onRefreshAuth={refreshAuth} />
+          ) : (
+            <SettingsPage />
+          )}
+        </main>
+      </div>
     </div>
   )
 }

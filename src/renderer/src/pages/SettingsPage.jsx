@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 export default function SettingsPage() {
   const [settings, setSettings] = useState(null)
   const [autoLaunch, setAutoLaunch] = useState(false)
+  const [updateState, setUpdateState] = useState('idle') // idle | checking | latest | available | error
+  const [updateMsg, setUpdateMsg] = useState(null)
 
   useEffect(() => {
     window.api.getSettings().then(setSettings)
@@ -22,6 +24,26 @@ export default function SettingsPage() {
     const next = { ...settings, ...patch }
     setSettings(next)
     window.api.setSettings(next)
+  }
+
+  // 手動檢查更新：即時回饋檢查中 / 已是最新 / 發現新版 / 失敗
+  const checkForUpdate = async () => {
+    setUpdateState('checking')
+    setUpdateMsg(null)
+    const res = await window.api.checkForUpdate()
+    if (res.status === 'available') {
+      setUpdateState('available')
+      setUpdateMsg(`發現新版本 v${res.version}，可於上方橫幅更新。`)
+    } else if (res.status === 'latest') {
+      setUpdateState('latest')
+      setUpdateMsg('已是最新版本。')
+    } else if (res.status === 'dev') {
+      setUpdateState('latest')
+      setUpdateMsg('開發模式不檢查更新。')
+    } else {
+      setUpdateState('error')
+      setUpdateMsg(res.message || '檢查更新失敗，請稍後再試。')
+    }
   }
 
   return (
@@ -96,6 +118,26 @@ export default function SettingsPage() {
           <p className="field__hint">
             登入 Windows 後自動開啟本工具；建議在安裝版啟用。
           </p>
+        </div>
+
+        <div className="field">
+          <span className="field__label">軟體更新</span>
+          <button
+            className="btn"
+            onClick={checkForUpdate}
+            disabled={updateState === 'checking'}
+          >
+            {updateState === 'checking' ? '檢查中…' : '檢查更新'}
+          </button>
+          {updateMsg && (
+            <p
+              className={
+                updateState === 'error' ? 'field__hint field__hint--error' : 'field__hint'
+              }
+            >
+              {updateMsg}
+            </p>
+          )}
         </div>
       </div>
     </section>

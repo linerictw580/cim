@@ -12,6 +12,9 @@ contextBridge.exposeInMainWorld('api', {
   // 選資料夾對話框，回傳路徑或 null
   selectFolder: () => ipcRenderer.invoke('dialog:selectFolder'),
 
+  // 掃描父目錄第一層子資料夾（批次匯入），回傳 [{ name, path, hasGit }]
+  scanSubProjects: (parentDir) => ipcRenderer.invoke('fs:scanSubProjects', parentDir),
+
   // 專案清單持久化
   getProjects: () => ipcRenderer.invoke('store:getProjects'),
   setProjects: (projects) => ipcRenderer.invoke('store:setProjects', projects),

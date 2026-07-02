@@ -1,4 +1,6 @@
 import { app, ipcMain, dialog, BrowserWindow, shell } from 'electron'
+import fs from 'fs'
+import { join } from 'path'
 import store from './store'
 import { openTerminal } from './terminal'
 import { getAuthStatus, login, logout, addToPath } from './auth'
@@ -23,6 +25,28 @@ export function registerIpc() {
     })
     if (result.canceled || result.filePaths.length === 0) return null
     return result.filePaths[0]
+  })
+
+  // 掃描父目錄第一層子資料夾，供「批次匯入」勾選使用
+  // 回傳 [{ name, path, hasGit }]；讀取失敗（權限/不存在）回傳空陣列，不中斷
+  ipcMain.handle('fs:scanSubProjects', (event, parentDir) => {
+    if (!parentDir) return []
+    try {
+      return fs
+        .readdirSync(parentDir, { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => {
+          const full = join(parentDir, entry.name)
+          return {
+            name: entry.name,
+            path: full,
+            hasGit: fs.existsSync(join(full, '.git'))
+          }
+        })
+    } catch (e) {
+      console.error('fs:scanSubProjects error', e)
+      return []
+    }
   })
 
   // 專案清單讀寫

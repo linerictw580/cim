@@ -2,7 +2,12 @@ import { app, ipcMain, dialog, BrowserWindow, shell } from 'electron'
 import fs from 'fs'
 import { join } from 'path'
 import store from './store'
-import { openTerminal } from './terminal'
+import {
+  openTerminal,
+  listWindowGroups,
+  clearWindowGroups,
+  getTerminalCapabilities
+} from './terminal'
 import { getAuthStatus, login, logout, addToPath } from './auth'
 import { checkForUpdate, downloadUpdate, installUpdate } from './updater'
 
@@ -64,7 +69,15 @@ export function registerIpc() {
   })
 
   // 在指定目錄開啟終端機並執行 claude，標題以專案名稱命名
-  ipcMain.handle('terminal:open', (event, cwd, name) => openTerminal(cwd, name))
+  // options: { mode: 'new' | 'tab', windowId }
+  ipcMain.handle('terminal:open', (event, cwd, name, options) => openTerminal(cwd, name, options))
+
+  // 目前可加 tab 的視窗群組清單
+  ipcMain.handle('terminal:listWindows', () => listWindowGroups())
+  // 清除視窗群組清單（使用者手動關閉視窗後重整用）
+  ipcMain.handle('terminal:clearWindows', () => clearWindowGroups())
+  // 終端機能力（wtAvailable：是否可用 tab）
+  ipcMain.handle('terminal:capabilities', () => getTerminalCapabilities())
 
   // Claude Code 認證
   ipcMain.handle('auth:status', () => getAuthStatus())

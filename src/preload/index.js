@@ -24,7 +24,13 @@ contextBridge.exposeInMainWorld('api', {
   setSettings: (settings) => ipcRenderer.invoke('store:setSettings', settings),
 
   // 開啟終端機並執行 claude，回傳 { ok, error? }
-  openTerminal: (cwd, name) => ipcRenderer.invoke('terminal:open', cwd, name),
+  // options: { mode: 'new' | 'tab', windowId }
+  openTerminal: (cwd, name, options) => ipcRenderer.invoke('terminal:open', cwd, name, options),
+
+  // 終端機視窗群組與能力（tab 功能）
+  listTerminalWindows: () => ipcRenderer.invoke('terminal:listWindows'),
+  clearTerminalWindows: () => ipcRenderer.invoke('terminal:clearWindows'),
+  getTerminalCapabilities: () => ipcRenderer.invoke('terminal:capabilities'),
 
   // Claude Code 認證
   getAuthStatus: () => ipcRenderer.invoke('auth:status'),

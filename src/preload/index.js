@@ -31,6 +31,11 @@ contextBridge.exposeInMainWorld('api', {
   // options: { mode: 'new' | 'tab', windowId }
   openTerminal: (cwd, name, options) => ipcRenderer.invoke('terminal:open', cwd, name, options),
 
+  // 啟動一個群組（單一視窗多分頁 / 或退化為多個獨立視窗），回傳 { ok, error? }
+  // members: [{ cwd, name }]
+  openGroup: (members, groupLabel) =>
+    ipcRenderer.invoke('terminal:openGroup', members, groupLabel),
+
   // 終端機視窗群組與能力（tab 功能）
   listTerminalWindows: () => ipcRenderer.invoke('terminal:listWindows'),
   clearTerminalWindows: () => ipcRenderer.invoke('terminal:clearWindows'),

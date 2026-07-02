@@ -152,3 +152,79 @@ export function openTerminal(cwd, title, options) {
   const command = store.get('settings').command || 'claude'
   return openTerminalCommand(cwd, title, command, options)
 }
+
+// 群組未命名時，用成員名稱自動組出視窗標籤（過長截斷）
+function autoGroupLabel(members) {
+  const joined = members.map((m) => m.name).join(', ')
+  return joined.length > 40 ? `${joined.slice(0, 39)}…` : joined
+}
+
+// 啟動一個群組：成員 members = [{ cwd, name }]，每個成員跑 settings 的預設指令。
+// Windows Terminal 可用時：開「單一具名視窗」，成員各為一個分頁（單一 wt.exe 呼叫，
+// 以 ';' token 串接多個 new-tab），並登記一筆 windowGroups（label 為 groupLabel 或自動標籤），
+// 使該視窗出現在專案列表的「加到分頁」選單。
+// 否則 fallback：每個成員各開一個獨立視窗（無分頁能力）。
+// 回傳 { ok: true } 或 { ok: false, error }
+export async function openGroup(members, groupLabel) {
+  const list = (members || []).filter((m) => m && m.cwd)
+  if (list.length === 0) return { ok: true }
+
+  const settings = store.get('settings')
+  const shell = settings.shell || 'powershell'
+  const command = settings.command || 'claude'
+  const terminal = settings.terminal || 'wt'
+  const useWt = terminal === 'wt' && isWtAvailable()
+
+  if (!useWt) {
+    // fallback：逐一開獨立視窗，任一失敗即回報第一個錯誤
+    for (const m of list) {
+      const res = await openTerminalCommand(m.cwd, m.name || m.cwd, command)
+      if (!res.ok) return res
+    }
+    return { ok: true }
+  }
+
+  // Windows Terminal：單一具名視窗多分頁
+  const label = (groupLabel && groupLabel.trim()) || autoGroupLabel(list)
+  windowSeq += 1
+  const windowId = `cim-${windowSeq}`
+  windowGroups.push({ id: windowId, label, createdAt: Date.now() })
+
+  const runArgs = buildRunArgs(shell, command)
+  const args = ['-w', windowId]
+  list.forEach((m, i) => {
+    if (i > 0) args.push(';') // wt 以獨立的 ';' 參數作為分頁分隔符
+    args.push(
+      'new-tab',
+      '-d',
+      m.cwd,
+      '--title',
+      m.name || m.cwd,
+      '--suppressApplicationTitle',
+      shell,
+      ...runArgs
+    )
+  })
+
+  return new Promise((resolve) => {
+    let child
+    try {
+      child = spawn('wt.exe', args, { detached: true, stdio: 'ignore', windowsHide: false })
+    } catch (err) {
+      // spawn 失敗回收剛登記的視窗群組，避免幽靈群組
+      const i = windowGroups.findIndex((w) => w.id === windowId)
+      if (i >= 0) windowGroups.splice(i, 1)
+      resolve({ ok: false, error: err.message })
+      return
+    }
+    child.on('error', (err) => {
+      const i = windowGroups.findIndex((w) => w.id === windowId)
+      if (i >= 0) windowGroups.splice(i, 1)
+      resolve({ ok: false, error: err.message })
+    })
+    child.on('spawn', () => {
+      child.unref()
+      resolve({ ok: true })
+    })
+  })
+}

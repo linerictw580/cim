@@ -4,6 +4,7 @@ import { join } from 'path'
 import store from './store'
 import {
   openTerminal,
+  openGroup,
   listWindowGroups,
   clearWindowGroups,
   getTerminalCapabilities
@@ -78,6 +79,11 @@ export function registerIpc() {
   // 在指定目錄開啟終端機並執行 claude，標題以專案名稱命名
   // options: { mode: 'new' | 'tab', windowId }
   ipcMain.handle('terminal:open', (event, cwd, name, options) => openTerminal(cwd, name, options))
+
+  // 啟動一個群組：members = [{ cwd, name }]，WT 可用時開單一視窗多分頁
+  ipcMain.handle('terminal:openGroup', (event, members, groupLabel) =>
+    openGroup(members, groupLabel)
+  )
 
   // 目前可加 tab 的視窗群組清單
   ipcMain.handle('terminal:listWindows', () => listWindowGroups())

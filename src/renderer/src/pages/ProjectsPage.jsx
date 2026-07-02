@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import ProjectItem from '../components/ProjectItem'
 import ConfirmDialog from '../components/ConfirmDialog'
+import ImportDialog from '../components/ImportDialog'
 import PathNotice from '../components/PathNotice'
 
 // 從絕對路徑取最後一段作為預設顯示名稱（相容 Windows \ 與 / 分隔）
@@ -14,6 +15,7 @@ export default function ProjectsPage({ auth, onLogout, onRefreshAuth }) {
   const [notice, setNotice] = useState(null)
   const [pendingRemove, setPendingRemove] = useState(null) // 待確認移除的專案
   const [confirmLogout, setConfirmLogout] = useState(false)
+  const [importState, setImportState] = useState(null) // { parentDir, items } 或 null
 
   useEffect(() => {
     window.api.getProjects().then((list) => {
@@ -34,6 +36,24 @@ export default function ProjectsPage({ auth, onLogout, onRefreshAuth }) {
     if (projects.some((p) => p.path === path)) return // 避免重複加入同一路徑
     const project = { id: crypto.randomUUID(), name: basename(path), path }
     persist([...projects, project])
+  }
+
+  // 選一個父目錄，掃描其下子資料夾後開啟批次匯入彈窗
+  const handleBatchImport = async () => {
+    const parentDir = await window.api.selectFolder()
+    if (!parentDir) return
+    const items = await window.api.scanSubProjects(parentDir)
+    setImportState({ parentDir, items })
+  }
+
+  // 批次匯入彈窗確認：以 path 去重合併後持久化
+  const confirmImport = (selectedItems) => {
+    const existing = new Set(projects.map((p) => p.path))
+    const added = selectedItems
+      .filter((it) => !existing.has(it.path))
+      .map((it) => ({ id: crypto.randomUUID(), name: it.name, path: it.path }))
+    if (added.length > 0) persist([...projects, ...added])
+    setImportState(null)
   }
 
   const handleRename = (id, name) => {
@@ -75,9 +95,14 @@ export default function ProjectsPage({ auth, onLogout, onRefreshAuth }) {
 
       <header className="page__header">
         <h1>專案</h1>
-        <button className="btn btn--primary" onClick={handleAdd}>
-          + 新增
-        </button>
+        <div className="page__header-actions">
+          <button className="btn" onClick={handleBatchImport}>
+            批次匯入
+          </button>
+          <button className="btn btn--primary" onClick={handleAdd}>
+            + 新增
+          </button>
+        </div>
       </header>
 
       {notice && (
@@ -125,6 +150,16 @@ export default function ProjectsPage({ auth, onLogout, onRefreshAuth }) {
         }}
         onCancel={() => setConfirmLogout(false)}
       />
+
+      {importState && (
+        <ImportDialog
+          parentDir={importState.parentDir}
+          items={importState.items}
+          existingPaths={new Set(projects.map((p) => p.path))}
+          onConfirm={confirmImport}
+          onCancel={() => setImportState(null)}
+        />
+      )}
     </section>
   )
 }

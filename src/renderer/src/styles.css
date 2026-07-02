@@ -791,3 +791,60 @@ body {
   border: 1px dashed var(--border);
   border-radius: 6px;
 }
+
+/* ---- 執行 split button + 下拉選單 ---- */
+.run-split {
+  position: relative;
+  display: inline-flex;
+}
+
+.run-split__caret {
+  width: 20px;
+}
+
+.run-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 180px;
+  padding: 4px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  z-index: 50;
+}
+
+.run-menu__item {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.run-menu__item:hover {
+  background: #333;
+}
+
+.run-menu__item--dim {
+  color: var(--text-dim);
+}
+
+.run-menu__sep {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--border);
+}
+
+.run-menu__hint {
+  padding: 7px 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+}

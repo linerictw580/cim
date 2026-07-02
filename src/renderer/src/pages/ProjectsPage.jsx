@@ -69,9 +69,10 @@ export default function ProjectsPage({ auth, onLogout, onRefreshAuth }) {
     setPendingRemove(null)
   }
 
-  const handleOpen = async (project) => {
+  // options: { mode: 'new' | 'tab', windowId }；省略時後端預設開新視窗
+  const handleOpen = async (project, options) => {
     setNotice(null)
-    const res = await window.api.openTerminal(project.path, project.name)
+    const res = await window.api.openTerminal(project.path, project.name, options)
     if (!res.ok) {
       setNotice(`「${project.name}」開啟終端機失敗：${res.error}`)
     }

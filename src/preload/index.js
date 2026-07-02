@@ -19,6 +19,10 @@ contextBridge.exposeInMainWorld('api', {
   getProjects: () => ipcRenderer.invoke('store:getProjects'),
   setProjects: (projects) => ipcRenderer.invoke('store:setProjects', projects),
 
+  // 啟動組合持久化
+  getCombos: () => ipcRenderer.invoke('store:getCombos'),
+  setCombos: (combos) => ipcRenderer.invoke('store:setCombos', combos),
+
   // 設定持久化
   getSettings: () => ipcRenderer.invoke('store:getSettings'),
   setSettings: (settings) => ipcRenderer.invoke('store:setSettings', settings),

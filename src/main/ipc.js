@@ -61,6 +61,13 @@ export function registerIpc() {
     return true
   })
 
+  // 啟動組合讀寫（整包陣列覆寫，比照 projects）
+  ipcMain.handle('store:getCombos', () => store.get('combos'))
+  ipcMain.handle('store:setCombos', (event, combos) => {
+    store.set('combos', combos)
+    return true
+  })
+
   // 設定讀寫
   ipcMain.handle('store:getSettings', () => store.get('settings'))
   ipcMain.handle('store:setSettings', (event, settings) => {

@@ -16,7 +16,7 @@
   <a href="https://github.com/linerictw580/cim/releases/latest"><b>⬇️ 下載最新版本</b></a>
 </p>
 
-前往 [**Releases 頁面**](https://github.com/linerictw580/cim/releases/latest)，在 **Assets** 區塊下載：
+前往 [**Releases 頁面**](https://github.com/linerictw580/cim/releases)，在 **Assets** 區塊下載：
 
 - `CIM-<version>-setup.exe` — NSIS 安裝檔（可選安裝目錄、建立捷徑），**一般使用者建議用這個**
 - `CIM-<version>-portable.exe` — 免安裝版，下載後直接執行

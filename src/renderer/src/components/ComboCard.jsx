@@ -1,15 +1,17 @@
 import { useState } from 'react'
-import { PencilIcon, TrashIcon } from './icons'
+import { PencilIcon, TrashIcon, ChevronDownIcon } from './icons'
+import ComboEditor from './ComboEditor'
 
-// 單一啟動組合卡片：顯示名稱與群組數，可就地重新命名、刪除。
-// 群組編輯與一鍵啟動於後續階段接上。
-export default function ComboCard({ combo, onRename, onRemove }) {
+// 單一啟動組合卡片：顯示名稱與群組數，可就地重新命名、展開編輯群組、刪除。
+// 所有內容異動經由 onChange(nextCombo) 交上層持久化；onRemove 負責刪除確認。
+export default function ComboCard({ combo, projects, onChange, onRemove }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(combo.name)
+  const [expanded, setExpanded] = useState(false)
 
   const commit = () => {
     const name = draft.trim()
-    if (name && name !== combo.name) onRename(combo.id, name)
+    if (name && name !== combo.name) onChange({ ...combo, name })
     else setDraft(combo.name)
     setEditing(false)
   }
@@ -24,6 +26,13 @@ export default function ComboCard({ combo, onRename, onRemove }) {
   return (
     <li className="combo-card">
       <div className="combo-card__head">
+        <button
+          className={`combo-card__toggle ${expanded ? 'is-open' : ''}`}
+          title={expanded ? '收合' : '展開編輯'}
+          onClick={() => setExpanded((v) => !v)}
+        >
+          <ChevronDownIcon />
+        </button>
         <div className="combo-card__title">
           {editing ? (
             <input
@@ -61,6 +70,8 @@ export default function ComboCard({ combo, onRename, onRemove }) {
           </button>
         </div>
       </div>
+
+      {expanded && <ComboEditor combo={combo} projects={projects} onChange={onChange} />}
     </li>
   )
 }

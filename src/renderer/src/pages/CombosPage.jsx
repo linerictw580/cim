@@ -6,12 +6,14 @@ import ConfirmDialog from '../components/ConfirmDialog'
 // 此階段提供 combo 外層 CRUD（新增 / 重新命名 / 刪除）；群組編輯與啟動於後續階段接上。
 export default function CombosPage() {
   const [combos, setCombos] = useState([])
+  const [projects, setProjects] = useState([]) // 供編輯時挑選加入群組
   const [loaded, setLoaded] = useState(false)
   const [pendingRemove, setPendingRemove] = useState(null) // 待確認刪除的 combo
 
   useEffect(() => {
-    window.api.getCombos().then((list) => {
-      setCombos(list || [])
+    Promise.all([window.api.getCombos(), window.api.getProjects()]).then(([cs, ps]) => {
+      setCombos(cs || [])
+      setProjects(ps || [])
       setLoaded(true)
     })
   }, [])
@@ -27,8 +29,9 @@ export default function CombosPage() {
     persist([...combos, combo])
   }
 
-  const handleRename = (id, name) => {
-    persist(combos.map((c) => (c.id === id ? { ...c, name } : c)))
+  // combo 內容異動（名稱 / 群組 / 成員）統一經此回寫
+  const handleChange = (nextCombo) => {
+    persist(combos.map((c) => (c.id === nextCombo.id ? nextCombo : c)))
   }
 
   const handleRemove = (combo) => {
@@ -56,7 +59,13 @@ export default function CombosPage() {
       ) : (
         <ul className="combo-list">
           {combos.map((c) => (
-            <ComboCard key={c.id} combo={c} onRename={handleRename} onRemove={handleRemove} />
+            <ComboCard
+              key={c.id}
+              combo={c}
+              projects={projects}
+              onChange={handleChange}
+              onRemove={handleRemove}
+            />
           ))}
         </ul>
       )}

@@ -30,5 +30,26 @@ contextBridge.exposeInMainWorld('api', {
   addToPath: () => ipcRenderer.invoke('auth:addToPath'),
 
   // 複製文字到剪貼簿
-  copyText: (text) => clipboard.writeText(text)
+  copyText: (text) => clipboard.writeText(text),
+
+  // 自動更新：手動檢查 / 下載 / 安裝
+  checkForUpdate: () => ipcRenderer.invoke('updater:check'),
+  downloadUpdate: () => ipcRenderer.invoke('updater:download'),
+  installUpdate: () => ipcRenderer.invoke('updater:install'),
+
+  // 訂閱更新事件；callback 收到 { type, payload }，回傳解除訂閱函式
+  onUpdateEvent: (callback) => {
+    const channels = [
+      'updater:update-available',
+      'updater:download-progress',
+      'updater:update-downloaded',
+      'updater:error'
+    ]
+    const bound = channels.map((ch) => {
+      const fn = (_event, payload) => callback({ type: ch.replace('updater:', ''), payload })
+      ipcRenderer.on(ch, fn)
+      return [ch, fn]
+    })
+    return () => bound.forEach(([ch, fn]) => ipcRenderer.removeListener(ch, fn))
+  }
 })

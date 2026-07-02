@@ -2,6 +2,7 @@ import { app, ipcMain, dialog, BrowserWindow } from 'electron'
 import store from './store'
 import { openTerminal } from './terminal'
 import { getAuthStatus, login, logout, addToPath } from './auth'
+import { checkForUpdate, downloadUpdate, installUpdate } from './updater'
 
 export function registerIpc() {
   // 應用程式版本（與 package.json version 同步）
@@ -46,4 +47,9 @@ export function registerIpc() {
   ipcMain.handle('auth:login', () => login())
   ipcMain.handle('auth:logout', () => logout())
   ipcMain.handle('auth:addToPath', () => addToPath())
+
+  // 自動更新：手動檢查 / 下載 / 安裝（事件另由 updater 主動推送給 renderer）
+  ipcMain.handle('updater:check', () => checkForUpdate())
+  ipcMain.handle('updater:download', () => downloadUpdate())
+  ipcMain.handle('updater:install', () => installUpdate())
 }

@@ -898,3 +898,35 @@ body {
   border-radius: 8px;
 }
 
+.combo-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.combo-card__title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.combo-card__name {
+  font-size: 15px;
+  font-weight: 600;
+  cursor: default;
+}
+
+.combo-card__meta {
+  font-size: 12px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.combo-card__actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+

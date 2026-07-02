@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { PencilIcon, TrashIcon, ChevronDownIcon } from './icons'
+import { PencilIcon, TrashIcon, ChevronDownIcon, TerminalIcon } from './icons'
 import ComboEditor from './ComboEditor'
 
-// 單一啟動組合卡片：顯示名稱與群組數，可就地重新命名、展開編輯群組、刪除。
-// 所有內容異動經由 onChange(nextCombo) 交上層持久化；onRemove 負責刪除確認。
-export default function ComboCard({ combo, projects, onChange, onRemove }) {
+// 單一啟動組合卡片：顯示名稱與群組數，可一鍵啟動、就地重新命名、展開編輯群組、刪除。
+// 所有內容異動經由 onChange(nextCombo) 交上層持久化；onLaunch/onRemove 由上層處理。
+export default function ComboCard({ combo, projects, onChange, onRemove, onLaunch }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(combo.name)
   const [expanded, setExpanded] = useState(false)
@@ -22,6 +22,7 @@ export default function ComboCard({ combo, projects, onChange, onRemove }) {
   }
 
   const groupCount = combo.groups?.length || 0
+  const hasLaunchable = (combo.groups || []).some((g) => g.projectIds.length > 0)
 
   return (
     <li className="combo-card">
@@ -58,6 +59,15 @@ export default function ComboCard({ combo, projects, onChange, onRemove }) {
           <span className="combo-card__meta">{groupCount} 個群組</span>
         </div>
         <div className="combo-card__actions">
+          <button
+            className="btn btn--primary combo-card__launch"
+            title={hasLaunchable ? '啟動此組合的所有群組' : '此組合尚無可啟動的專案'}
+            disabled={!hasLaunchable}
+            onClick={() => onLaunch(combo)}
+          >
+            <TerminalIcon />
+            啟動
+          </button>
           <button className="icon-btn" title="重新命名" onClick={() => setEditing(true)}>
             <PencilIcon />
           </button>

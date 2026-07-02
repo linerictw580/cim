@@ -8,6 +8,7 @@ export default function CombosPage() {
   const [combos, setCombos] = useState([])
   const [projects, setProjects] = useState([]) // 供編輯時挑選加入群組
   const [loaded, setLoaded] = useState(false)
+  const [notice, setNotice] = useState(null) // 啟動結果提示
   const [pendingRemove, setPendingRemove] = useState(null) // 待確認刪除的 combo
 
   useEffect(() => {
@@ -38,6 +39,38 @@ export default function CombosPage() {
     setPendingRemove(combo)
   }
 
+  // 一鍵啟動：逐一群組解析成員（過濾已被刪除的專案）後呼叫 openGroup。
+  // 每個有成員的群組開一個終端機視窗（WT 可用時為多分頁）。
+  const handleLaunch = async (combo) => {
+    setNotice(null)
+    const byId = new Map(projects.map((p) => [p.id, p]))
+    const groups = combo.groups || []
+    let launched = 0
+    let missing = 0
+    const errors = []
+
+    for (const g of groups) {
+      const members = []
+      for (const pid of g.projectIds) {
+        const p = byId.get(pid)
+        if (p) members.push({ cwd: p.path, name: p.name })
+        else missing += 1
+      }
+      if (members.length === 0) continue
+      launched += 1
+      const res = await window.api.openGroup(members, g.name)
+      if (!res.ok) errors.push(res.error)
+    }
+
+    if (launched === 0) {
+      setNotice(`組合「${combo.name}」沒有可啟動的專案。`)
+    } else if (errors.length > 0) {
+      setNotice(`部分群組啟動失敗：${errors[0]}`)
+    } else if (missing > 0) {
+      setNotice(`已啟動，但略過了 ${missing} 個已被移除的專案。`)
+    }
+  }
+
   const confirmRemove = () => {
     persist(combos.filter((c) => c.id !== pendingRemove.id))
     setPendingRemove(null)
@@ -54,6 +87,15 @@ export default function CombosPage() {
         </div>
       </header>
 
+      {notice && (
+        <div className="notice" role="alert">
+          <span>{notice}</span>
+          <button className="notice__close" onClick={() => setNotice(null)}>
+            ✕
+          </button>
+        </div>
+      )}
+
       {loaded && combos.length === 0 ? (
         <div className="empty">尚未建立任何組合。點右上「新增」建立一個。</div>
       ) : (
@@ -65,6 +107,7 @@ export default function CombosPage() {
               projects={projects}
               onChange={handleChange}
               onRemove={handleRemove}
+              onLaunch={handleLaunch}
             />
           ))}
         </ul>

@@ -930,6 +930,26 @@ body {
   flex-shrink: 0;
 }
 
+.combo-card__launch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.combo-card__launch svg {
+  width: 16px;
+  height: 16px;
+}
+
+.combo-card__launch:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.combo-card__launch:disabled:hover {
+  background: var(--accent);
+}
+
 .combo-card__toggle {
   display: inline-flex;
   align-items: center;

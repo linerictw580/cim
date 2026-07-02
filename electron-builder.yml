@@ -27,3 +27,7 @@ nsis:
   createDesktopShortcut: always
 portable:
   artifactName: ${productName}-${version}-portable.${ext}
+publish:
+  provider: github
+  owner: linerictw580
+  repo: cim

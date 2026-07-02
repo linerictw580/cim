@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Sidebar from './components/Sidebar'
 import LoginGate from './components/LoginGate'
 import ProjectsPage from './pages/ProjectsPage'
+import CombosPage from './pages/CombosPage'
 import SettingsPage from './pages/SettingsPage'
 import UpdateBanner from './components/UpdateBanner'
 
@@ -53,11 +54,11 @@ export default function App() {
       <div className="layout">
         <Sidebar page={page} onNavigate={setPage} />
         <main className="content">
-          {page === 'projects' ? (
+          {page === 'projects' && (
             <ProjectsPage auth={auth} onLogout={handleLogout} onRefreshAuth={refreshAuth} />
-          ) : (
-            <SettingsPage />
           )}
+          {page === 'combos' && <CombosPage />}
+          {page === 'settings' && <SettingsPage />}
         </main>
       </div>
     </div>

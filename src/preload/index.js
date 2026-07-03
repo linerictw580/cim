@@ -47,6 +47,9 @@ contextBridge.exposeInMainWorld('api', {
   logout: () => ipcRenderer.invoke('auth:logout'),
   addToPath: () => ipcRenderer.invoke('auth:addToPath'),
 
+  // Claude 方案額度用量（/usage），回傳 { ok, session, weekly, scoped, fetchedAt } 或 { ok:false, error }
+  getUsage: () => ipcRenderer.invoke('usage:get'),
+
   // 複製文字到剪貼簿
   copyText: (text) => clipboard.writeText(text),
 

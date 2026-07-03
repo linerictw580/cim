@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar'
 import LoginGate from './components/LoginGate'
 import ProjectsPage from './pages/ProjectsPage'
 import CombosPage from './pages/CombosPage'
+import UsagePage from './pages/UsagePage'
 import SettingsPage from './pages/SettingsPage'
 import UpdateBanner from './components/UpdateBanner'
 
@@ -58,6 +59,7 @@ export default function App() {
             <ProjectsPage auth={auth} onLogout={handleLogout} onRefreshAuth={refreshAuth} />
           )}
           {page === 'combos' && <CombosPage />}
+          {page === 'usage' && <UsagePage />}
           {page === 'settings' && <SettingsPage />}
         </main>
       </div>

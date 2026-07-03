@@ -1115,3 +1115,65 @@ body {
   cursor: pointer;
 }
 
+/* ---- 用量 ---- */
+.usage {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 560px;
+}
+
+.usage-item__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.usage-item__label {
+  font-size: 14px;
+}
+
+.usage-item__pct {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.usage-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.usage-bar__fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.usage-bar__fill.is-high {
+  background: #e0533f;
+}
+
+.usage-item__reset {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.usage-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+
+.usage-group__title {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+

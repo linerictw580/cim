@@ -10,6 +10,7 @@ import {
   getTerminalCapabilities
 } from './terminal'
 import { getAuthStatus, login, logout, addToPath } from './auth'
+import { getUsage } from './usage'
 import { checkForUpdate, downloadUpdate, installUpdate } from './updater'
 
 export function registerIpc() {
@@ -97,6 +98,9 @@ export function registerIpc() {
   ipcMain.handle('auth:login', () => login())
   ipcMain.handle('auth:logout', () => logout())
   ipcMain.handle('auth:addToPath', () => addToPath())
+
+  // Claude 方案額度用量（/usage）
+  ipcMain.handle('usage:get', () => getUsage())
 
   // 自動更新：手動檢查 / 下載 / 安裝（事件另由 updater 主動推送給 renderer）
   ipcMain.handle('updater:check', () => checkForUpdate())

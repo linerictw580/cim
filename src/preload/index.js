@@ -61,6 +61,17 @@ contextBridge.exposeInMainWorld('api', {
   // 以系統預設瀏覽器開啟外部連結
   openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
 
+  // 訂閱主行程的分頁切換指令（系統匣「設定」觸發）；callback 收到 page 字串，回傳解除訂閱函式
+  onNavigate: (callback) => {
+    const fn = (_event, page) => callback(page)
+    ipcRenderer.on('nav:goto', fn)
+    return () => ipcRenderer.removeListener('nav:goto', fn)
+  },
+
+  // 系統匣客製選單（tray-menu.html）專用
+  trayAction: (id) => ipcRenderer.send('tray:action', id),
+  reportMenuSize: (width, height) => ipcRenderer.send('tray:menuSize', { width, height }),
+
   // 訂閱更新事件；callback 收到 { type, payload }，回傳解除訂閱函式
   onUpdateEvent: (callback) => {
     const channels = [

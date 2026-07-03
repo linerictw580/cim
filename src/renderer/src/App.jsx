@@ -21,6 +21,11 @@ export default function App() {
     refreshAuth()
   }, [refreshAuth])
 
+  // 系統匣「設定」等指令：主行程通知後切換分頁
+  useEffect(() => {
+    return window.api.onNavigate(setPage)
+  }, [])
+
   const handleLogout = useCallback(async () => {
     await window.api.logout()
     await refreshAuth() // 登出後 loggedIn 變 false，自動退回 gate

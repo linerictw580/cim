@@ -1,6 +1,21 @@
 import { useState, useRef, useEffect } from 'react'
 import { TerminalIcon, PencilIcon, TrashIcon, ChevronDownIcon, PinIcon } from './icons'
 
+// 將最後執行時間戳格式化為相對時間；超過一週改顯示日期
+function formatLastRun(ts) {
+  const diff = Date.now() - ts
+  const min = 60 * 1000
+  const hr = 60 * min
+  const day = 24 * hr
+  if (diff < min) return '剛剛'
+  if (diff < hr) return `${Math.floor(diff / min)} 分鐘前`
+  if (diff < day) return `${Math.floor(diff / hr)} 小時前`
+  if (diff < 7 * day) return `${Math.floor(diff / day)} 天前`
+  const d = new Date(ts)
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`
+}
+
 export default function ProjectItem({ project, onOpen, onRename, onRemove, onPin }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(project.name)
@@ -98,13 +113,23 @@ export default function ProjectItem({ project, onOpen, onRename, onRemove, onPin
             }}
           />
         ) : (
-          <span
-            className="project-item__name"
-            title="雙擊重新命名"
-            onDoubleClick={() => setEditing(true)}
-          >
-            {project.name}
-          </span>
+          <div className="project-item__name-row">
+            <span
+              className="project-item__name"
+              title="雙擊重新命名"
+              onDoubleClick={() => setEditing(true)}
+            >
+              {project.name}
+            </span>
+            {project.lastRunAt != null && (
+              <span
+                className="project-item__time"
+                title={`最後執行：${new Date(project.lastRunAt).toLocaleString()}`}
+              >
+                {formatLastRun(project.lastRunAt)}
+              </span>
+            )}
+          </div>
         )}
         <span className="project-item__path" title={project.path}>
           {project.path}

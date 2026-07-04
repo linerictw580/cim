@@ -680,10 +680,24 @@ body {
   gap: 3px;
 }
 
+.project-item__name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
 .project-item__name {
   font-size: 14px;
   font-weight: 600;
   cursor: text;
+}
+
+.project-item__time {
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  flex: none;
 }
 
 .project-item__input {

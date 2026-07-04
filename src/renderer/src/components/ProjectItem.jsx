@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import { TerminalIcon, PencilIcon, TrashIcon, ChevronDownIcon } from './icons'
+import { TerminalIcon, PencilIcon, TrashIcon, ChevronDownIcon, PinIcon } from './icons'
 
-export default function ProjectItem({ project, onOpen, onRename, onRemove }) {
+export default function ProjectItem({ project, onOpen, onRename, onRemove, onPin }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(project.name)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -112,6 +112,13 @@ export default function ProjectItem({ project, onOpen, onRename, onRemove }) {
       </div>
 
       <div className="project-item__actions">
+        <button
+          className={`icon-btn ${project.pinned ? 'icon-btn--pinned' : ''}`}
+          title={project.pinned ? '取消釘選' : '釘選'}
+          onClick={() => onPin(project.id)}
+        >
+          <PinIcon filled={!!project.pinned} />
+        </button>
         <div className="run-split" ref={menuRef}>
           <button
             className="icon-btn icon-btn--terminal run-split__main"

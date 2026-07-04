@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import ProjectItem from '../components/ProjectItem'
 import ConfirmDialog from '../components/ConfirmDialog'
 import ImportDialog from '../components/ImportDialog'
 import PathNotice from '../components/PathNotice'
+import Dropdown from '../components/Dropdown'
 
 // 從絕對路徑取最後一段作為預設顯示名稱（相容 Windows \ 與 / 分隔）
 function basename(p) {
@@ -16,13 +17,36 @@ export default function ProjectsPage({ auth, onLogout, onRefreshAuth }) {
   const [pendingRemove, setPendingRemove] = useState(null) // 待確認移除的專案
   const [confirmLogout, setConfirmLogout] = useState(false)
   const [importState, setImportState] = useState(null) // { parentDir, items } 或 null
+  const [query, setQuery] = useState('') // 搜尋字串（依 scope 比對名稱或路徑）
+  const [settings, setSettings] = useState(null) // 供讀寫排序偏好，寫入時保留其他欄位
+
+  const sort = settings?.sort || 'manual' // 'manual' | 'name' | 'recent'
+  const scope = settings?.searchScope || 'name' // 'name' | 'path'
 
   useEffect(() => {
     window.api.getProjects().then((list) => {
       setProjects(list || [])
       setLoaded(true)
     })
+    window.api.getSettings().then(setSettings)
   }, [])
+
+  // 過濾＋排序後的可見清單，並拆成「釘選」與「其他」兩組（釘選永遠置頂）
+  // 搜尋只比對 scope 指定的單一欄位（名稱或路徑），避免另一欄位意外命中造成困惑
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    let list = projects
+    if (q) {
+      list = list.filter((p) => (scope === 'path' ? p.path : p.name).toLowerCase().includes(q))
+    }
+    const sorted = [...list]
+    if (sort === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name))
+    else if (sort === 'recent') sorted.sort((a, b) => (b.lastRunAt || 0) - (a.lastRunAt || 0))
+    return {
+      pinned: sorted.filter((p) => p.pinned),
+      rest: sorted.filter((p) => !p.pinned)
+    }
+  }, [projects, query, sort, scope])
 
   // 更新 state 並持久化
   const persist = (next) => {
@@ -60,6 +84,18 @@ export default function ProjectsPage({ auth, onLogout, onRefreshAuth }) {
     persist(projects.map((p) => (p.id === id ? { ...p, name } : p)))
   }
 
+  const handlePin = (id) => {
+    persist(projects.map((p) => (p.id === id ? { ...p, pinned: !p.pinned } : p)))
+  }
+
+  // 更新排序 / 搜尋範圍等清單偏好並持久化（保留 terminal/shell/command 等其他欄位）
+  const patchSettings = (patch) => {
+    if (!settings) return
+    const next = { ...settings, ...patch }
+    setSettings(next)
+    window.api.setSettings(next)
+  }
+
   const handleRemove = (project) => {
     setPendingRemove(project)
   }
@@ -75,7 +111,10 @@ export default function ProjectsPage({ auth, onLogout, onRefreshAuth }) {
     const res = await window.api.openTerminal(project.path, project.name, options)
     if (!res.ok) {
       setNotice(`「${project.name}」開啟終端機失敗：${res.error}`)
+      return
     }
+    // 蓋章最後啟動時間，供「最近啟動」排序使用
+    persist(projects.map((p) => (p.id === project.id ? { ...p, lastRunAt: Date.now() } : p)))
   }
 
   const account = [auth?.email, auth?.subscriptionType].filter(Boolean).join(' · ')
@@ -118,17 +157,67 @@ export default function ProjectsPage({ auth, onLogout, onRefreshAuth }) {
       {loaded && projects.length === 0 ? (
         <div className="empty">尚未加入任何專案。點右上「新增」選擇資料夾。</div>
       ) : (
-        <ul className="project-list">
-          {projects.map((p) => (
-            <ProjectItem
-              key={p.id}
-              project={p}
-              onOpen={handleOpen}
-              onRename={handleRename}
-              onRemove={handleRemove}
+        <>
+          <div className="list-toolbar">
+            <Dropdown
+              value={scope}
+              onChange={(v) => patchSettings({ searchScope: v })}
+              title="搜尋範圍"
+              options={[
+                { value: 'name', label: '名稱' },
+                { value: 'path', label: '路徑' }
+              ]}
             />
-          ))}
-        </ul>
+            <input
+              className="list-toolbar__search"
+              type="search"
+              placeholder={`搜尋${scope === 'path' ? '路徑' : '名稱'}…`}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <Dropdown
+              value={sort}
+              onChange={(v) => patchSettings({ sort: v })}
+              title="排序方式"
+              align="right"
+              options={[
+                { value: 'manual', label: '加入順序' },
+                { value: 'name', label: '名稱' },
+                { value: 'recent', label: '最近啟動' }
+              ]}
+            />
+          </div>
+
+          {visible.pinned.length + visible.rest.length === 0 ? (
+            <div className="empty">找不到符合「{query}」的專案。</div>
+          ) : (
+            <ul className="project-list">
+              {visible.pinned.map((p) => (
+                <ProjectItem
+                  key={p.id}
+                  project={p}
+                  onOpen={handleOpen}
+                  onRename={handleRename}
+                  onRemove={handleRemove}
+                  onPin={handlePin}
+                />
+              ))}
+              {visible.pinned.length > 0 && visible.rest.length > 0 && (
+                <li className="project-sep" aria-hidden="true" />
+              )}
+              {visible.rest.map((p) => (
+                <ProjectItem
+                  key={p.id}
+                  project={p}
+                  onOpen={handleOpen}
+                  onRename={handleRename}
+                  onRemove={handleRemove}
+                  onPin={handlePin}
+                />
+              ))}
+            </ul>
+          )}
+        </>
       )}
 
       <ConfirmDialog

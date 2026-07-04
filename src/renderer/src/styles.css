@@ -538,6 +538,105 @@ body {
 }
 
 /* ---- 專案列表 ---- */
+/* ---- 專案清單工具列（搜尋 + 排序）---- */
+.list-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.list-toolbar__search {
+  flex: 1;
+  min-width: 0;
+  background: #1a1a1a;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 14px;
+  padding: 8px 10px;
+}
+
+.list-toolbar__search:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ---- 客製下拉（搜尋範圍 / 排序），比照 App 內選單風格 ---- */
+.dropdown {
+  position: relative;
+  flex: none;
+}
+
+.dropdown__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 14px;
+  padding: 7px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.dropdown__trigger:hover {
+  background: #2f2f2f;
+}
+
+.dropdown__trigger svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--text-dim);
+}
+
+.dropdown__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 100%;
+  padding: 4px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  z-index: 50;
+}
+
+.dropdown__menu--right {
+  left: auto;
+  right: 0;
+}
+
+.dropdown__item {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.dropdown__item:hover {
+  background: #333;
+}
+
+.dropdown__item.is-active {
+  color: var(--accent);
+  background: rgba(217, 119, 87, 0.14);
+}
+
+.dropdown__item.is-active:hover {
+  background: rgba(217, 119, 87, 0.22);
+}
+
 .project-list {
   list-style: none;
   margin: 0;
@@ -545,6 +644,22 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* 釘選組與其他組之間的分隔線 */
+.project-sep {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--border);
+}
+
+/* 已釘選的圖釘按鈕以強調色標示 */
+.icon-btn--pinned {
+  color: var(--accent);
+}
+
+.icon-btn--pinned:hover {
+  color: var(--accent-hover);
 }
 
 .project-item {

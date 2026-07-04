@@ -12,7 +12,9 @@ const store = new Store({
     settings: {
       terminal: 'wt', // 'wt' = Windows Terminal, 'window' = 傳統獨立視窗
       shell: 'powershell', // shell 執行檔，可自訂 (powershell / pwsh / cmd)
-      command: 'claude' // 進入目錄後執行的指令
+      command: 'claude', // 進入目錄後執行的指令
+      sort: 'manual', // 專案清單排序：'manual' 加入順序 / 'name' 名稱 / 'recent' 最近啟動
+      searchScope: 'name' // 專案搜尋範圍：'name' 名稱 / 'path' 路徑
     }
   }
 })

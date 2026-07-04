@@ -48,18 +48,33 @@ export default function CombosPage() {
     let launched = 0
     let missing = 0
     const errors = []
+    const launchedIds = new Set() // 成功啟動的專案 id，供蓋章 lastRunAt
 
     for (const g of groups) {
       const members = []
+      const ids = []
       for (const pid of g.projectIds) {
         const p = byId.get(pid)
-        if (p) members.push({ cwd: p.path, name: p.name })
-        else missing += 1
+        if (p) {
+          members.push({ cwd: p.path, name: p.name })
+          ids.push(pid)
+        } else missing += 1
       }
       if (members.length === 0) continue
       launched += 1
       const res = await window.api.openGroup(members, g.name)
-      if (!res.ok) errors.push(res.error)
+      if (res.ok) ids.forEach((id) => launchedIds.add(id))
+      else errors.push(res.error)
+    }
+
+    // 蓋章最後啟動時間（僅成功啟動者），與專案頁單獨啟動一致
+    if (launchedIds.size > 0) {
+      const now = Date.now()
+      const nextProjects = projects.map((p) =>
+        launchedIds.has(p.id) ? { ...p, lastRunAt: now } : p
+      )
+      setProjects(nextProjects)
+      window.api.setProjects(nextProjects)
     }
 
     if (launched === 0) {

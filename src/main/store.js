@@ -13,6 +13,10 @@ const store = new Store({
       terminal: 'wt', // 'wt' = Windows Terminal, 'window' = 傳統獨立視窗
       shell: 'powershell', // shell 執行檔，可自訂 (powershell / pwsh / cmd)
       command: 'claude', // 進入目錄後執行的指令
+      // 以下三項僅適用 Windows Terminal，且只在「開新視窗」時套用（加分頁沿用既有視窗）
+      termCols: 120, // 開新視窗寬度（字元欄數）
+      termRows: 30, // 開新視窗高度（字元列數）
+      termMaximized: false, // 以最大化開啟（勾選時忽略 cols/rows）
       sort: 'manual', // 專案清單排序：'manual' 加入順序 / 'name' 名稱 / 'recent' 最近啟動
       searchScope: 'name' // 專案搜尋範圍：'name' 名稱 / 'path' 路徑
     }

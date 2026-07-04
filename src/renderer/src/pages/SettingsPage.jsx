@@ -128,6 +128,50 @@ export default function SettingsPage({ auth, onLogout, onRefreshAuth }) {
         </div>
 
         <div className="field">
+          <span className="field__label">終端機視窗</span>
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              checked={!!settings.termMaximized}
+              disabled={settings.terminal !== 'wt'}
+              onChange={(e) => update({ termMaximized: e.target.checked })}
+            />
+            以最大化開啟
+          </label>
+          <div className="size-row">
+            <label className="size-field">
+              <span>寬（欄）</span>
+              <input
+                type="number"
+                min="20"
+                max="500"
+                className="field__input size-field__input"
+                value={settings.termCols ?? 120}
+                disabled={settings.terminal !== 'wt' || !!settings.termMaximized}
+                onChange={(e) => update({ termCols: e.target.value })}
+              />
+            </label>
+            <label className="size-field">
+              <span>高（列）</span>
+              <input
+                type="number"
+                min="10"
+                max="200"
+                className="field__input size-field__input"
+                value={settings.termRows ?? 30}
+                disabled={settings.terminal !== 'wt' || !!settings.termMaximized}
+                onChange={(e) => update({ termRows: e.target.value })}
+              />
+            </label>
+          </div>
+          <p className="field__hint">
+            {settings.terminal === 'wt'
+              ? '尺寸單位為字元（欄×列）；僅在開新視窗時套用，加到既有分頁會沿用該視窗尺寸。'
+              : '此設定僅適用 Windows Terminal。'}
+          </p>
+        </div>
+
+        <div className="field">
           <label className="checkbox">
             <input
               type="checkbox"

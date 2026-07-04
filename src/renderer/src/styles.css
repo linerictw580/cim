@@ -396,6 +396,39 @@ body {
   color: var(--text-dim);
 }
 
+/* 終端機視窗尺寸輸入 */
+.size-row {
+  display: flex;
+  gap: 12px;
+}
+
+.size-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.size-field__input {
+  width: 100px;
+}
+
+/* 停用（反灰）：全螢幕時尺寸輸入、或非 WT 時整組 */
+.field__input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.size-field:has(input:disabled),
+.checkbox:has(input:disabled) {
+  opacity: 0.45;
+}
+
+.checkbox input:disabled {
+  cursor: not-allowed;
+}
+
 .field__hint--error {
   color: #e0876b;
 }

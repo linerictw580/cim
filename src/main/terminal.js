@@ -36,6 +36,16 @@ export function getTerminalCapabilities() {
   return { wtAvailable: isWtAvailable() }
 }
 
+// 依 settings 產生 Windows Terminal「開新視窗」時的尺寸/最大化全域選項。
+// 僅適用開新視窗（加分頁沿用既有視窗尺寸，故呼叫端在 tab 模式不使用此函式）。
+// --size 為 欄數,列數（字元格，非像素）；--maximized 時忽略尺寸。
+function wtWindowArgs(settings) {
+  if (settings.termMaximized) return ['--maximized']
+  const cols = Math.min(500, Math.max(20, Number(settings.termCols) || 120))
+  const rows = Math.min(200, Math.max(10, Number(settings.termRows) || 30))
+  return ['--size', `${cols},${rows}`]
+}
+
 function shellName(shell) {
   return shell
     .replace(/\.exe$/i, '')
@@ -96,6 +106,7 @@ export function openTerminalCommand(cwd, title, command, options = {}) {
         // -d 起始目錄，--title 分頁標題，--suppressApplicationTitle 鎖定標題不被改寫
         const runArgs = buildRunArgs(shell, command)
         let windowId
+        let winArgs = [] // 尺寸/全螢幕全域選項；僅開新視窗時套用
         if (mode === 'tab' && options.windowId) {
           windowId = options.windowId
         } else {
@@ -104,12 +115,14 @@ export function openTerminalCommand(cwd, title, command, options = {}) {
           windowId = `cim-${windowSeq}`
           windowGroups.push({ id: windowId, label: name, createdAt: Date.now() })
           createdGroupId = windowId
+          winArgs = wtWindowArgs(settings)
         }
         child = spawn(
           'wt.exe',
           [
             '-w',
             windowId,
+            ...winArgs,
             'new-tab',
             '-d',
             cwd,
@@ -191,7 +204,7 @@ export async function openGroup(members, groupLabel) {
   windowGroups.push({ id: windowId, label, createdAt: Date.now() })
 
   const runArgs = buildRunArgs(shell, command)
-  const args = ['-w', windowId]
+  const args = ['-w', windowId, ...wtWindowArgs(settings)]
   list.forEach((m, i) => {
     if (i > 0) args.push(';') // wt 以獨立的 ';' 參數作為分頁分隔符
     args.push(

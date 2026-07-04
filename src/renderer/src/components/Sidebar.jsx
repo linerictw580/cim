@@ -56,7 +56,10 @@ export default function Sidebar({ page, onNavigate, auth }) {
     window.api.getVersion().then(setVersion)
   }, [])
 
+  // sidebar 較窄，完整 email 會被截斷；改顯示用戶名稱（email @ 前段）＋ plan
   const account = [auth?.email, auth?.subscriptionType].filter(Boolean).join(' · ')
+  const username = auth?.email?.split('@')[0] || '已登入'
+  const accountLabel = [username, auth?.subscriptionType].filter(Boolean).join(' · ')
 
   return (
     <aside className="sidebar">
@@ -77,7 +80,7 @@ export default function Sidebar({ page, onNavigate, auth }) {
         {auth?.loggedIn && (
           <div className="sidebar__account" title={account ? `已登入 · ${account}` : '已登入'}>
             <span className="status-dot" />
-            <span className="sidebar__account-name">{auth.email || '已登入'}</span>
+            <span className="sidebar__account-name">{accountLabel}</span>
           </div>
         )}
         {version && <div className="sidebar__version">v{version}</div>}

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import ProjectItem from '../components/ProjectItem'
 import ConfirmDialog from '../components/ConfirmDialog'
 import ImportDialog from '../components/ImportDialog'
-import PathNotice from '../components/PathNotice'
 import Dropdown from '../components/Dropdown'
 
 // 從絕對路徑取最後一段作為預設顯示名稱（相容 Windows \ 與 / 分隔）
@@ -10,12 +9,11 @@ function basename(p) {
   return p.split(/[\\/]/).filter(Boolean).pop() || p
 }
 
-export default function ProjectsPage({ auth, onLogout, onRefreshAuth }) {
+export default function ProjectsPage() {
   const [projects, setProjects] = useState([])
   const [loaded, setLoaded] = useState(false)
   const [notice, setNotice] = useState(null)
   const [pendingRemove, setPendingRemove] = useState(null) // 待確認移除的專案
-  const [confirmLogout, setConfirmLogout] = useState(false)
   const [importState, setImportState] = useState(null) // { parentDir, items } 或 null
   const [query, setQuery] = useState('') // 搜尋字串（依 scope 比對名稱或路徑）
   const [settings, setSettings] = useState(null) // 供讀寫排序偏好，寫入時保留其他欄位
@@ -117,22 +115,8 @@ export default function ProjectsPage({ auth, onLogout, onRefreshAuth }) {
     persist(projects.map((p) => (p.id === project.id ? { ...p, lastRunAt: Date.now() } : p)))
   }
 
-  const account = [auth?.email, auth?.subscriptionType].filter(Boolean).join(' · ')
-
   return (
     <section className="page">
-      <div className="authbar">
-        <span className="authbar__status">
-          <span className="authbar__dot" />
-          已登入{account ? ` · ${account}` : ''}
-        </span>
-        <button className="authbar__logout" onClick={() => setConfirmLogout(true)}>
-          登出
-        </button>
-      </div>
-
-      {auth && !auth.inPath && <PathNotice onDone={onRefreshAuth} />}
-
       <header className="page__header">
         <h1>專案</h1>
         <div className="page__header-actions">
@@ -227,18 +211,6 @@ export default function ProjectsPage({ auth, onLogout, onRefreshAuth }) {
         confirmText="移除"
         onConfirm={confirmRemove}
         onCancel={() => setPendingRemove(null)}
-      />
-
-      <ConfirmDialog
-        open={confirmLogout}
-        title="登出 Claude"
-        message="登出後需重新執行 claude auth login 才能再次使用，確定要登出嗎？"
-        confirmText="登出"
-        onConfirm={() => {
-          setConfirmLogout(false)
-          onLogout()
-        }}
-        onCancel={() => setConfirmLogout(false)}
       />
 
       {importState && (

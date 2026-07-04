@@ -58,14 +58,14 @@ export default function App() {
     <div className="app-shell">
       <UpdateBanner />
       <div className="layout">
-        <Sidebar page={page} onNavigate={setPage} />
+        <Sidebar page={page} onNavigate={setPage} auth={auth} />
         <main className="content">
-          {page === 'projects' && (
-            <ProjectsPage auth={auth} onLogout={handleLogout} onRefreshAuth={refreshAuth} />
-          )}
+          {page === 'projects' && <ProjectsPage />}
           {page === 'combos' && <CombosPage />}
           {page === 'usage' && <UsagePage />}
-          {page === 'settings' && <SettingsPage />}
+          {page === 'settings' && (
+            <SettingsPage auth={auth} onLogout={handleLogout} onRefreshAuth={refreshAuth} />
+          )}
         </main>
       </div>
     </div>

@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react'
+import ConfirmDialog from '../components/ConfirmDialog'
+import PathNotice from '../components/PathNotice'
 
-export default function SettingsPage() {
+export default function SettingsPage({ auth, onLogout, onRefreshAuth }) {
   const [settings, setSettings] = useState(null)
   const [autoLaunch, setAutoLaunch] = useState(false)
   const [updateState, setUpdateState] = useState('idle') // idle | checking | latest | available | error
   const [updateMsg, setUpdateMsg] = useState(null)
+  const [confirmLogout, setConfirmLogout] = useState(false)
+
+  const account = [auth?.email, auth?.subscriptionType].filter(Boolean).join(' · ')
 
   useEffect(() => {
     window.api.getSettings().then(setSettings)
@@ -52,7 +57,23 @@ export default function SettingsPage() {
         <h1>設定</h1>
       </header>
 
+      {auth && !auth.inPath && <PathNotice onDone={onRefreshAuth} />}
+
       <div className="form">
+        <div className="field">
+          <span className="field__label">帳號</span>
+          <div className="account-row">
+            <span className="account-row__info">
+              <span className="status-dot" />
+              {account || '已登入'}
+            </span>
+            <button className="btn btn--sm" onClick={() => setConfirmLogout(true)}>
+              登出
+            </button>
+          </div>
+          <p className="field__hint">登出後需重新執行 claude auth login 才能再次使用。</p>
+        </div>
+
         <div className="field">
           <span className="field__label">終端機類型</span>
           <div className="radio-group">
@@ -140,6 +161,18 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmLogout}
+        title="登出 Claude"
+        message="登出後需重新執行 claude auth login 才能再次使用，確定要登出嗎？"
+        confirmText="登出"
+        onConfirm={() => {
+          setConfirmLogout(false)
+          onLogout()
+        }}
+        onCancel={() => setConfirmLogout(false)}
+      />
     </section>
   )
 }

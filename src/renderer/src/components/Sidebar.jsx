@@ -49,12 +49,14 @@ const NAV = [
   }
 ]
 
-export default function Sidebar({ page, onNavigate }) {
+export default function Sidebar({ page, onNavigate, auth }) {
   const [version, setVersion] = useState('')
 
   useEffect(() => {
     window.api.getVersion().then(setVersion)
   }, [])
+
+  const account = [auth?.email, auth?.subscriptionType].filter(Boolean).join(' · ')
 
   return (
     <aside className="sidebar">
@@ -71,7 +73,15 @@ export default function Sidebar({ page, onNavigate }) {
           </button>
         ))}
       </nav>
-      {version && <div className="sidebar__version">v{version}</div>}
+      <div className="sidebar__footer">
+        {auth?.loggedIn && (
+          <div className="sidebar__account" title={account ? `已登入 · ${account}` : '已登入'}>
+            <span className="status-dot" />
+            <span className="sidebar__account-name">{auth.email || '已登入'}</span>
+          </div>
+        )}
+        {version && <div className="sidebar__version">v{version}</div>}
+      </div>
     </aside>
   )
 }

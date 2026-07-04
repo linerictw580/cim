@@ -197,9 +197,28 @@ body {
   gap: 4px;
 }
 
-.sidebar__version {
+.sidebar__footer {
   margin-top: auto;
-  padding: 8px 10px 4px;
+}
+
+.sidebar__account {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px 6px;
+  min-width: 0;
+}
+
+.sidebar__account-name {
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar__version {
+  padding: 4px 10px;
   font-size: 12px;
   color: var(--text-dim);
 }
@@ -401,32 +420,8 @@ body {
   accent-color: var(--accent);
 }
 
-/* ---- 已登入狀態列 ---- */
-.authbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 18px;
-  padding: 8px 12px;
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 13px;
-}
-
-.authbar__status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--text-dim);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.authbar__dot {
+/* ---- 已登入狀態指示點（sidebar / 設定共用）---- */
+.status-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -434,20 +429,24 @@ body {
   flex-shrink: 0;
 }
 
-.authbar__logout {
-  flex-shrink: 0;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text-dim);
-  border-radius: 5px;
-  padding: 4px 12px;
-  font-size: 12px;
-  cursor: pointer;
+/* ---- 設定頁：帳號列 ---- */
+.account-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.authbar__logout:hover {
-  background: #333;
-  color: var(--text);
+.account-row__info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--text-dim);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ---- PATH 提示 ---- */

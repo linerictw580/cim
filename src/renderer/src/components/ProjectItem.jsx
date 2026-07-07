@@ -1,5 +1,18 @@
 import { useState, useRef, useEffect } from 'react'
 import { TerminalIcon, PencilIcon, TrashIcon, ChevronDownIcon, PinIcon } from './icons'
+import { resolveCommand, commandLabel } from '../commands'
+
+// 依觸發按鈕位置計算 fixed 選單樣式，右對齊觸發按鈕；下方空間不足且上方較大時向上展開。
+// 用 fixed 定位是為了不被 .content 的 overflow 裁切（與 run-menu 同理）。
+function fixedMenuStyle(triggerEl, estHeight) {
+  const rect = triggerEl.getBoundingClientRect()
+  const right = window.innerWidth - rect.right
+  const spaceBelow = window.innerHeight - rect.bottom
+  if (spaceBelow < estHeight + 8 && rect.top > spaceBelow) {
+    return { position: 'fixed', bottom: window.innerHeight - rect.top + 4, top: 'auto', right }
+  }
+  return { position: 'fixed', top: rect.bottom + 4, bottom: 'auto', right }
+}
 
 // 將最後執行時間戳格式化為相對時間；超過一週改顯示日期
 function formatLastRun(ts) {
@@ -16,15 +29,35 @@ function formatLastRun(ts) {
   return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())}`
 }
 
-export default function ProjectItem({ project, onOpen, onRename, onRemove, onPin }) {
+export default function ProjectItem({
+  project,
+  globalCommand,
+  onOpen,
+  onRename,
+  onRemove,
+  onPin,
+  onEditCommands
+}) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(project.name)
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuStyle, setMenuStyle] = useState(null) // fixed 定位座標，避免被 .content 的 overflow 裁切
   const [windows, setWindows] = useState([]) // 可加 tab 的視窗群組
   const [wtAvailable, setWtAvailable] = useState(true)
+  const [cmdMenuOpen, setCmdMenuOpen] = useState(false) // 指令選擇選單
+  const [cmdMenuStyle, setCmdMenuStyle] = useState(null)
+  const [activeCommandId, setActiveCommandId] = useState(null) // 目前作用中的指令（null＝專案預設）
   const menuRef = useRef(null)
   const caretRef = useRef(null)
+  const cmdMenuRef = useRef(null)
+  const cmdTriggerRef = useRef(null)
+
+  // 此專案的自訂指令與「目前實際會跑的那一個」（找不到作用中就退回第一個；皆無則 null＝用全域）
+  const commands = project.commands || []
+  const effective = commands.find((c) => c.id === activeCommandId) || commands[0] || null
+
+  // 解析本次要執行的指令字串（傳給後端；後端在收到 falsy 時會 fallback 全域）
+  const currentCommand = () => resolveCommand(project, activeCommandId, globalCommand)
 
   const commit = () => {
     const name = draft.trim()
@@ -39,22 +72,27 @@ export default function ProjectItem({ project, onOpen, onRename, onRemove, onPin
   }
 
   // 點選單外側、捲動或改變視窗大小時關閉選單（fixed 定位在捲動後會與按鈕脫節）
+  // 兩個選單（執行選項 / 指令選擇）共用同一組監聽
   useEffect(() => {
-    if (!menuOpen) return
+    if (!menuOpen && !cmdMenuOpen) return
     const onDocClick = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false)
+      if (cmdMenuRef.current && !cmdMenuRef.current.contains(e.target)) setCmdMenuOpen(false)
     }
-    const close = () => setMenuOpen(false)
+    const closeAll = () => {
+      setMenuOpen(false)
+      setCmdMenuOpen(false)
+    }
     document.addEventListener('mousedown', onDocClick)
-    window.addEventListener('resize', close)
+    window.addEventListener('resize', closeAll)
     // 捕捉階段監聽，才能收到 .content 容器的捲動
-    window.addEventListener('scroll', close, true)
+    window.addEventListener('scroll', closeAll, true)
     return () => {
       document.removeEventListener('mousedown', onDocClick)
-      window.removeEventListener('resize', close)
-      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('resize', closeAll)
+      window.removeEventListener('scroll', closeAll, true)
     }
-  }, [menuOpen])
+  }, [menuOpen, cmdMenuOpen])
 
   // 依 caret 位置與可用空間，計算選單向下或向上展開（fixed 定位，估算高度決定方向）
   const computeMenuStyle = (list, wt) => {
@@ -76,6 +114,7 @@ export default function ProjectItem({ project, onOpen, onRename, onRemove, onPin
   // 展開選單前先查詢目前的視窗群組與 tab 能力
   const toggleMenu = async () => {
     if (!menuOpen) {
+      setCmdMenuOpen(false)
       const [caps, list] = await Promise.all([
         window.api.getTerminalCapabilities(),
         window.api.listTerminalWindows()
@@ -87,9 +126,26 @@ export default function ProjectItem({ project, onOpen, onRename, onRemove, onPin
     setMenuOpen((v) => !v)
   }
 
+  // 執行時一律帶入目前作用中的指令（options 省略＝後端開新視窗）
   const run = (options) => {
     setMenuOpen(false)
-    onOpen(project, options)
+    onOpen(project, options, currentCommand())
+  }
+
+  // 展開指令選單：估算高度後以 fixed 定位開啟（同時關閉執行選項選單）
+  const toggleCmdMenu = () => {
+    if (!cmdMenuOpen) {
+      setMenuOpen(false)
+      const itemCount = commands.length > 0 ? commands.length + 1 : 2
+      const est = 8 + itemCount * 32 + 9 // 內距 + 項目 + 分隔/提示
+      setCmdMenuStyle(fixedMenuStyle(cmdTriggerRef.current, est))
+    }
+    setCmdMenuOpen((v) => !v)
+  }
+
+  const openEditor = () => {
+    setCmdMenuOpen(false)
+    onEditCommands(project)
   }
 
   const clearWindows = async () => {
@@ -144,11 +200,56 @@ export default function ProjectItem({ project, onOpen, onRename, onRemove, onPin
         >
           <PinIcon filled={!!project.pinned} />
         </button>
+        <div className="cmd-select" ref={cmdMenuRef}>
+          <button
+            ref={cmdTriggerRef}
+            type="button"
+            className={`cmd-select__trigger ${effective ? 'cmd-select__trigger--custom' : ''}`}
+            title="選擇 / 編輯此專案要執行的指令"
+            onClick={toggleCmdMenu}
+          >
+            <span className="cmd-select__label">
+              {effective ? commandLabel(effective) : '指令'}
+            </span>
+            <ChevronDownIcon />
+          </button>
+          {cmdMenuOpen && (
+            <div className="run-menu" style={cmdMenuStyle}>
+              {commands.length > 0 ? (
+                <>
+                  {commands.map((c) => (
+                    <button
+                      key={c.id}
+                      className={`run-menu__item ${effective && c.id === effective.id ? 'is-active' : ''}`}
+                      onClick={() => {
+                        setActiveCommandId(c.id)
+                        setCmdMenuOpen(false)
+                      }}
+                    >
+                      {commandLabel(c)}
+                    </button>
+                  ))}
+                  <div className="run-menu__sep" />
+                  <button className="run-menu__item run-menu__item--dim" onClick={openEditor}>
+                    編輯指令…
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="run-menu__hint">目前使用全域：{globalCommand}</div>
+                  <button className="run-menu__item" onClick={openEditor}>
+                    ＋ 新增自訂指令…
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
         <div className="run-split" ref={menuRef}>
           <button
             className="icon-btn icon-btn--terminal run-split__main"
-            title="開啟終端機並執行 claude"
-            onClick={() => onOpen(project)}
+            title={`開啟終端機並執行：${currentCommand() || globalCommand}`}
+            onClick={() => onOpen(project, undefined, currentCommand())}
           >
             <TerminalIcon />
           </button>

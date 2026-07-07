@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import ProjectItem from '../components/ProjectItem'
 import ConfirmDialog from '../components/ConfirmDialog'
 import ImportDialog from '../components/ImportDialog'
+import CommandsDialog from '../components/CommandsDialog'
 import Dropdown from '../components/Dropdown'
 
 // 從絕對路徑取最後一段作為預設顯示名稱（相容 Windows \ 與 / 分隔）
@@ -17,9 +18,11 @@ export default function ProjectsPage() {
   const [importState, setImportState] = useState(null) // { parentDir, items } 或 null
   const [query, setQuery] = useState('') // 搜尋字串（依 scope 比對名稱或路徑）
   const [settings, setSettings] = useState(null) // 供讀寫排序偏好，寫入時保留其他欄位
+  const [editingCommandsFor, setEditingCommandsFor] = useState(null) // 正在編輯自訂指令的專案
 
   const sort = settings?.sort || 'manual' // 'manual' | 'name' | 'recent'
   const scope = settings?.searchScope || 'name' // 'name' | 'path'
+  const globalCommand = settings?.command || 'claude' // 未自訂時的 fallback 指令
 
   useEffect(() => {
     window.api.getProjects().then((list) => {
@@ -104,16 +107,31 @@ export default function ProjectsPage() {
   }
 
   // options: { mode: 'new' | 'tab', windowId }；省略時後端預設開新視窗
-  // command 為 null 時後端 fallback 全域預設指令（Stage 2 起由 ProjectItem 解析後傳入）
-  const handleOpen = async (project, options) => {
+  // command 由 ProjectItem 依作用中指令解析後傳入；falsy 時後端 fallback 全域預設
+  const handleOpen = async (project, options, command) => {
     setNotice(null)
-    const res = await window.api.openTerminal(project.path, project.name, null, options)
+    const res = await window.api.openTerminal(project.path, project.name, command, options)
     if (!res.ok) {
       setNotice(`「${project.name}」開啟終端機失敗：${res.error}`)
       return
     }
     // 蓋章最後啟動時間，供「最近啟動」排序使用
     persist(projects.map((p) => (p.id === project.id ? { ...p, lastRunAt: Date.now() } : p)))
+  }
+
+  // 儲存某專案的自訂指令；清單為空時移除 commands 欄位（保持資料乾淨）
+  const handleSaveCommands = (projectId, commands) => {
+    persist(
+      projects.map((p) => {
+        if (p.id !== projectId) return p
+        if (!commands || commands.length === 0) {
+          const { commands: _omit, ...rest } = p
+          return rest
+        }
+        return { ...p, commands }
+      })
+    )
+    setEditingCommandsFor(null)
   }
 
   return (
@@ -181,10 +199,12 @@ export default function ProjectsPage() {
                 <ProjectItem
                   key={p.id}
                   project={p}
+                  globalCommand={globalCommand}
                   onOpen={handleOpen}
                   onRename={handleRename}
                   onRemove={handleRemove}
                   onPin={handlePin}
+                  onEditCommands={setEditingCommandsFor}
                 />
               ))}
               {visible.pinned.length > 0 && visible.rest.length > 0 && (
@@ -194,10 +214,12 @@ export default function ProjectsPage() {
                 <ProjectItem
                   key={p.id}
                   project={p}
+                  globalCommand={globalCommand}
                   onOpen={handleOpen}
                   onRename={handleRename}
                   onRemove={handleRemove}
                   onPin={handlePin}
+                  onEditCommands={setEditingCommandsFor}
                 />
               ))}
             </ul>
@@ -221,6 +243,15 @@ export default function ProjectsPage() {
           existingPaths={new Set(projects.map((p) => p.path))}
           onConfirm={confirmImport}
           onCancel={() => setImportState(null)}
+        />
+      )}
+
+      {editingCommandsFor && (
+        <CommandsDialog
+          project={editingCommandsFor}
+          globalCommand={globalCommand}
+          onSave={(commands) => handleSaveCommands(editingCommandsFor.id, commands)}
+          onCancel={() => setEditingCommandsFor(null)}
         />
       )}
     </section>

@@ -77,9 +77,11 @@ export function registerIpc() {
     return true
   })
 
-  // 在指定目錄開啟終端機並執行 claude，標題以專案名稱命名
+  // 在指定目錄開啟終端機並執行指定 command（未指定則全域預設），標題以專案名稱命名
   // options: { mode: 'new' | 'tab', windowId }
-  ipcMain.handle('terminal:open', (event, cwd, name, options) => openTerminal(cwd, name, options))
+  ipcMain.handle('terminal:open', (event, cwd, name, command, options) =>
+    openTerminal(cwd, name, command, options)
+  )
 
   // 啟動一個群組：members = [{ cwd, name }]，WT 可用時開單一視窗多分頁
   ipcMain.handle('terminal:openGroup', (event, members, groupLabel) =>

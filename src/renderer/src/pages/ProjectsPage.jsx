@@ -104,9 +104,10 @@ export default function ProjectsPage() {
   }
 
   // options: { mode: 'new' | 'tab', windowId }；省略時後端預設開新視窗
+  // command 為 null 時後端 fallback 全域預設指令（Stage 2 起由 ProjectItem 解析後傳入）
   const handleOpen = async (project, options) => {
     setNotice(null)
-    const res = await window.api.openTerminal(project.path, project.name, options)
+    const res = await window.api.openTerminal(project.path, project.name, null, options)
     if (!res.ok) {
       setNotice(`「${project.name}」開啟終端機失敗：${res.error}`)
       return

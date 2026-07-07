@@ -27,9 +27,10 @@ contextBridge.exposeInMainWorld('api', {
   getSettings: () => ipcRenderer.invoke('store:getSettings'),
   setSettings: (settings) => ipcRenderer.invoke('store:setSettings', settings),
 
-  // 開啟終端機並執行 claude，回傳 { ok, error? }
+  // 開啟終端機並執行指定 command（傳 null 則用全域預設），回傳 { ok, error? }
   // options: { mode: 'new' | 'tab', windowId }
-  openTerminal: (cwd, name, options) => ipcRenderer.invoke('terminal:open', cwd, name, options),
+  openTerminal: (cwd, name, command, options) =>
+    ipcRenderer.invoke('terminal:open', cwd, name, command, options),
 
   // 啟動一個群組（單一視窗多分頁 / 或退化為多個獨立視窗），回傳 { ok, error? }
   // members: [{ cwd, name }]

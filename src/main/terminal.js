@@ -159,11 +159,11 @@ export function openTerminalCommand(cwd, title, command, options = {}) {
   })
 }
 
-// 開啟專案終端：執行 settings 中設定的預設指令（預設 claude）
+// 開啟專案終端：執行傳入的 command；未指定時 fallback 全域設定指令（預設 claude）
 // options 轉傳給 openTerminalCommand（mode / windowId）
-export function openTerminal(cwd, title, options) {
-  const command = store.get('settings').command || 'claude'
-  return openTerminalCommand(cwd, title, command, options)
+export function openTerminal(cwd, title, command, options) {
+  const cmd = command || store.get('settings').command || 'claude'
+  return openTerminalCommand(cwd, title, cmd, options)
 }
 
 // 群組未命名時，用成員名稱自動組出視窗標籤（過長截斷）
@@ -172,7 +172,8 @@ function autoGroupLabel(members) {
   return joined.length > 40 ? `${joined.slice(0, 39)}…` : joined
 }
 
-// 啟動一個群組：成員 members = [{ cwd, name }]，每個成員跑 settings 的預設指令。
+// 啟動一個群組：成員 members = [{ cwd, name, command? }]，每個成員跑自己的 command
+// （未指定則 fallback 全域設定指令）。
 // Windows Terminal 可用時：開「單一具名視窗」，成員各為一個分頁（單一 wt.exe 呼叫，
 // 以 ';' token 串接多個 new-tab），並登記一筆 windowGroups（label 為 groupLabel 或自動標籤），
 // 使該視窗出現在專案列表的「加到分頁」選單。
@@ -184,14 +185,14 @@ export async function openGroup(members, groupLabel) {
 
   const settings = store.get('settings')
   const shell = settings.shell || 'powershell'
-  const command = settings.command || 'claude'
+  const globalCommand = settings.command || 'claude'
   const terminal = settings.terminal || 'wt'
   const useWt = terminal === 'wt' && isWtAvailable()
 
   if (!useWt) {
     // fallback：逐一開獨立視窗，任一失敗即回報第一個錯誤
     for (const m of list) {
-      const res = await openTerminalCommand(m.cwd, m.name || m.cwd, command)
+      const res = await openTerminalCommand(m.cwd, m.name || m.cwd, m.command || globalCommand)
       if (!res.ok) return res
     }
     return { ok: true }
@@ -203,10 +204,11 @@ export async function openGroup(members, groupLabel) {
   const windowId = `cim-${windowSeq}`
   windowGroups.push({ id: windowId, label, createdAt: Date.now() })
 
-  const runArgs = buildRunArgs(shell, command)
   const args = ['-w', windowId, ...wtWindowArgs(settings)]
   list.forEach((m, i) => {
     if (i > 0) args.push(';') // wt 以獨立的 ';' 參數作為分頁分隔符
+    // 每個成員可有各自的 command（未指定則全域預設）
+    const runArgs = buildRunArgs(shell, m.command || globalCommand)
     args.push(
       'new-tab',
       '-d',

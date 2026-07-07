@@ -172,6 +172,9 @@ if (!gotLock) {
   app.on('second-instance', () => showWindow())
 
   app.whenReady().then(() => {
+    // Windows 通知與工作列以此 AppUserModelID 顯示應用程式名稱；未設定時會顯示預設的
+    // electron.app.CIM。須在建立視窗前呼叫，工作列分組才會正確。
+    if (process.platform === 'win32') app.setAppUserModelId('Claude Instance Manager')
     registerIpc()
     registerTrayIpc()
     createWindow()

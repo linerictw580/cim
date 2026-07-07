@@ -2,15 +2,14 @@
 // 資料形狀：project.commands?: [{ id, name, command }]（name 可留空）
 
 // 解析某專案在給定選擇下實際要執行的指令字串。
-// 優先序：指定的 commandId 命中 → 專案第一個自訂指令（專案預設）→ 全域指令。
-// 「有自訂就 override 全域」即由此體現：專案有 commands 時就不會落到 globalCommand。
+// 優先序：指定的 commandId 命中某自訂指令 → 該自訂指令；否則（含「預設」/未選/已失效）→ 全域指令。
+// 即「預設＝全域」：自訂指令是明確挑選才會 override 全域。
 export function resolveCommand(project, commandId, globalCommand) {
   const cmds = project?.commands || []
   if (commandId) {
     const hit = cmds.find((c) => c.id === commandId)
     if (hit) return hit.command
   }
-  if (cmds.length > 0) return cmds[0].command
   return globalCommand
 }
 

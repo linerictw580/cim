@@ -52,11 +52,11 @@ export default function ProjectItem({
   const cmdMenuRef = useRef(null)
   const cmdTriggerRef = useRef(null)
 
-  // 此專案的自訂指令與「目前實際會跑的那一個」（找不到作用中就退回第一個；皆無則 null＝用全域）
+  // 此專案的自訂指令；effective＝目前作用中的自訂指令，null 代表「預設（全域）」
   const commands = project.commands || []
-  const effective = commands.find((c) => c.id === activeCommandId) || commands[0] || null
+  const effective = commands.find((c) => c.id === activeCommandId) || null
 
-  // 解析本次要執行的指令字串（傳給後端；後端在收到 falsy 時會 fallback 全域）
+  // 解析本次要執行的指令字串（未選自訂時為全域）
   const currentCommand = () => resolveCommand(project, activeCommandId, globalCommand)
 
   const commit = () => {
@@ -136,8 +136,9 @@ export default function ProjectItem({
   const toggleCmdMenu = () => {
     if (!cmdMenuOpen) {
       setMenuOpen(false)
-      const itemCount = commands.length > 0 ? commands.length + 1 : 2
-      const est = 8 + itemCount * 32 + 9 // 內距 + 項目 + 分隔/提示
+      // 有自訂：預設 + 各自訂 + 編輯，另含兩條分隔線；無自訂：提示 + 新增
+      const itemCount = commands.length > 0 ? commands.length + 2 : 2
+      const est = 8 + itemCount * 32 + 18
       setCmdMenuStyle(fixedMenuStyle(cmdTriggerRef.current, est))
     }
     setCmdMenuOpen((v) => !v)
@@ -209,7 +210,7 @@ export default function ProjectItem({
             onClick={toggleCmdMenu}
           >
             <span className="cmd-select__label">
-              {effective ? commandLabel(effective) : '指令'}
+              {commands.length === 0 ? '指令' : effective ? commandLabel(effective) : '預設'}
             </span>
             <ChevronDownIcon />
           </button>
@@ -217,6 +218,16 @@ export default function ProjectItem({
             <div className="run-menu" style={cmdMenuStyle}>
               {commands.length > 0 ? (
                 <>
+                  <button
+                    className={`run-menu__item ${!effective ? 'is-active' : ''}`}
+                    onClick={() => {
+                      setActiveCommandId(null)
+                      setCmdMenuOpen(false)
+                    }}
+                  >
+                    預設（{globalCommand}）
+                  </button>
+                  <div className="run-menu__sep" />
                   {commands.map((c) => (
                     <button
                       key={c.id}

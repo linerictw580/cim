@@ -6,7 +6,7 @@ import { commandLabel } from '../commands'
 // 所有異動都算出新的 combo 物件，透過 onChange 交給上層持久化（不自持狀態）。
 // group 結構：{ id, name, projectIds: [], commandByProject?: { [projectId]: commandId } }
 //   projectIds       成員（以 project.id 參照現有專案，順序即分頁順序）
-//   commandByProject 每個成員選定的指令 id（挑自該專案自訂指令；缺省＝專案預設）
+//   commandByProject 每個成員選定的指令 id（挑自該專案自訂指令；缺省＝預設，即全域）
 export default function ComboEditor({ combo, projects, onChange }) {
   // 目前展開「加入專案」挑選器的 group id（同時只開一個）
   const [pickerGroupId, setPickerGroupId] = useState(null)

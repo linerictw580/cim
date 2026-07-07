@@ -63,7 +63,7 @@ export default function CombosPage() {
       for (const pid of g.projectIds) {
         const p = byId.get(pid)
         if (p) {
-          // 依成員選定的指令解析（缺省→專案預設→全域）
+          // 依成員選定的指令解析（未選/預設→全域）
           const command = resolveCommand(p, g.commandByProject?.[pid], globalCommand)
           members.push({ cwd: p.path, name: p.name, command })
           ids.push(pid)

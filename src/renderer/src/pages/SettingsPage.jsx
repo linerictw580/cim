@@ -116,7 +116,7 @@ export default function SettingsPage({ auth, onLogout, onRefreshAuth }) {
 
         <div className="field">
           <label className="field__label" htmlFor="command">
-            啟動指令
+            全域啟動指令
           </label>
           <input
             id="command"
@@ -124,7 +124,9 @@ export default function SettingsPage({ auth, onLogout, onRefreshAuth }) {
             value={settings.command}
             onChange={(e) => update({ command: e.target.value })}
           />
-          <p className="field__hint">進入目錄後執行的指令，預設 claude。</p>
+          <p className="field__hint">
+            進入目錄後執行的指令，預設 claude。專案未設定自訂指令時，執行與組合皆以此為預設。
+          </p>
         </div>
 
         <div className="field">

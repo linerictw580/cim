@@ -56,7 +56,9 @@ export default function CommandsDialog({ project, globalCommand, onSave, onCance
       <div className="modal modal--wide" onClick={(e) => e.stopPropagation()}>
         <h2 className="modal__title">「{project.name}」自訂指令</h2>
         <p className="modal__message">
-          設定此專案可執行的指令，執行時可挑選要跑哪一個。未新增任何指令時，執行會使用全域預設：
+          設定此專案可執行的指令。
+          <br />
+          未新增任何指令時，執行會使用全域預設：
           <code className="import__path">{globalCommand}</code>
         </p>
 
@@ -114,7 +116,7 @@ export default function CommandsDialog({ project, globalCommand, onSave, onCance
           + 新增指令
         </button>
         <p className="field__hint cmd-edit__note">
-          第一個指令為此專案的預設。使用 Windows Terminal 時，指令請避免包含分號（;）。
+          使用 Windows Terminal 時，指令請避免包含分號（;）。
         </p>
 
         <div className="modal__actions">

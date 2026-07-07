@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import ComboCard from '../components/ComboCard'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { resolveCommand } from '../commands'
 
 // 啟動組合頁：列出使用者自定義的 combo，每個 combo 可一鍵啟動其下所有 group。
 // 此階段提供 combo 外層 CRUD（新增 / 重新命名 / 刪除）；群組編輯與啟動於後續階段接上。
@@ -10,11 +11,17 @@ export default function CombosPage() {
   const [loaded, setLoaded] = useState(false)
   const [notice, setNotice] = useState(null) // 啟動結果提示
   const [pendingRemove, setPendingRemove] = useState(null) // 待確認刪除的 combo
+  const [globalCommand, setGlobalCommand] = useState('claude') // 未自訂時的 fallback 指令
 
   useEffect(() => {
-    Promise.all([window.api.getCombos(), window.api.getProjects()]).then(([cs, ps]) => {
+    Promise.all([
+      window.api.getCombos(),
+      window.api.getProjects(),
+      window.api.getSettings()
+    ]).then(([cs, ps, s]) => {
       setCombos(cs || [])
       setProjects(ps || [])
+      setGlobalCommand(s?.command || 'claude')
       setLoaded(true)
     })
   }, [])
@@ -56,7 +63,9 @@ export default function CombosPage() {
       for (const pid of g.projectIds) {
         const p = byId.get(pid)
         if (p) {
-          members.push({ cwd: p.path, name: p.name })
+          // 依成員選定的指令解析（缺省→專案預設→全域）
+          const command = resolveCommand(p, g.commandByProject?.[pid], globalCommand)
+          members.push({ cwd: p.path, name: p.name, command })
           ids.push(pid)
         } else missing += 1
       }

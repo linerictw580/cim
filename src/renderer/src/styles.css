@@ -1332,10 +1332,31 @@ body {
   color: #e06c6c;
 }
 
+/* 成員列右側：指令下拉 + 上下移/移除 按鈕 */
+.group-member__right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .group-member__actions {
   display: flex;
   gap: 2px;
   flex-shrink: 0;
+}
+
+/* 成員列的指令下拉在此密集情境下縮小尺寸 */
+.group-member .dropdown__trigger {
+  padding: 3px 8px;
+  font-size: 12px;
+  max-width: 150px;
+}
+
+.group-member .dropdown__trigger span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .group-box__add {

@@ -1,14 +1,18 @@
 import { useState } from 'react'
+import Dropdown from './Dropdown'
+import { commandLabel } from '../commands'
 
 // combo 的展開編輯區：管理其下的 group 與成員。
 // 所有異動都算出新的 combo 物件，透過 onChange 交給上層持久化（不自持狀態）。
-// group 結構：{ id, name, projectIds: [] }；成員以 project.id 參照現有專案。
+// group 結構：{ id, name, projectIds: [], commandByProject?: { [projectId]: commandId } }
+//   projectIds       成員（以 project.id 參照現有專案，順序即分頁順序）
+//   commandByProject 每個成員選定的指令 id（挑自該專案自訂指令；缺省＝專案預設）
 export default function ComboEditor({ combo, projects, onChange }) {
   // 目前展開「加入專案」挑選器的 group id（同時只開一個）
   const [pickerGroupId, setPickerGroupId] = useState(null)
 
   const groups = combo.groups || []
-  const nameById = new Map(projects.map((p) => [p.id, p.name]))
+  const projById = new Map(projects.map((p) => [p.id, p]))
 
   const update = (nextGroups) => onChange({ ...combo, groups: nextGroups })
 
@@ -50,9 +54,25 @@ export default function ComboEditor({ combo, projects, onChange }) {
 
   const removeProject = (gid, pid) => {
     update(
-      groups.map((g) =>
-        g.id === gid ? { ...g, projectIds: g.projectIds.filter((id) => id !== pid) } : g
-      )
+      groups.map((g) => {
+        if (g.id !== gid) return g
+        // 一併清掉該成員的指令選擇，避免殘留孤兒對照
+        const { [pid]: _omit, ...rest } = g.commandByProject || {}
+        return { ...g, projectIds: g.projectIds.filter((id) => id !== pid), commandByProject: rest }
+      })
+    )
+  }
+
+  // 設定成員要執行的指令（commandId 為空＝回到「預設」，刪除對照）
+  const setMemberCommand = (gid, pid, commandId) => {
+    update(
+      groups.map((g) => {
+        if (g.id !== gid) return g
+        const map = { ...(g.commandByProject || {}) }
+        if (commandId) map[pid] = commandId
+        else delete map[pid]
+        return { ...g, commandByProject: map }
+      })
     )
   }
 
@@ -108,38 +128,63 @@ export default function ComboEditor({ combo, projects, onChange }) {
               <div className="group-box__empty">尚未加入專案</div>
             ) : (
               <ul className="group-members">
-                {g.projectIds.map((pid, pi) => (
-                  <li key={pid} className="group-member">
-                    <span className="group-member__name">
-                      {nameById.get(pid) || <span className="group-member__missing">（已移除的專案）</span>}
-                    </span>
-                    <div className="group-member__actions">
-                      <button
-                        className="icon-btn icon-btn--sm"
-                        title="上移"
-                        disabled={pi === 0}
-                        onClick={() => moveProject(g.id, pi, -1)}
-                      >
-                        ↑
-                      </button>
-                      <button
-                        className="icon-btn icon-btn--sm"
-                        title="下移"
-                        disabled={pi === g.projectIds.length - 1}
-                        onClick={() => moveProject(g.id, pi, 1)}
-                      >
-                        ↓
-                      </button>
-                      <button
-                        className="icon-btn icon-btn--sm icon-btn--danger"
-                        title="從群組移除"
-                        onClick={() => removeProject(g.id, pid)}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </li>
-                ))}
+                {g.projectIds.map((pid, pi) => {
+                  const proj = projById.get(pid)
+                  const projCommands = proj?.commands || []
+                  // 選定的指令 id；若已在專案端被刪除則退回顯示「預設」
+                  const chosen = g.commandByProject?.[pid]
+                  const chosenValue = projCommands.some((c) => c.id === chosen) ? chosen : ''
+                  return (
+                    <li key={pid} className="group-member">
+                      <span className="group-member__name">
+                        {proj ? (
+                          proj.name
+                        ) : (
+                          <span className="group-member__missing">（已移除的專案）</span>
+                        )}
+                      </span>
+                      <div className="group-member__right">
+                        {projCommands.length > 0 && (
+                          <Dropdown
+                            value={chosenValue}
+                            onChange={(v) => setMemberCommand(g.id, pid, v)}
+                            title="選擇此成員要執行的指令"
+                            align="right"
+                            options={[
+                              { value: '', label: '預設' },
+                              ...projCommands.map((c) => ({ value: c.id, label: commandLabel(c) }))
+                            ]}
+                          />
+                        )}
+                        <div className="group-member__actions">
+                          <button
+                            className="icon-btn icon-btn--sm"
+                            title="上移"
+                            disabled={pi === 0}
+                            onClick={() => moveProject(g.id, pi, -1)}
+                          >
+                            ↑
+                          </button>
+                          <button
+                            className="icon-btn icon-btn--sm"
+                            title="下移"
+                            disabled={pi === g.projectIds.length - 1}
+                            onClick={() => moveProject(g.id, pi, 1)}
+                          >
+                            ↓
+                          </button>
+                          <button
+                            className="icon-btn icon-btn--sm icon-btn--danger"
+                            title="從群組移除"
+                            onClick={() => removeProject(g.id, pid)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    </li>
+                  )
+                })}
               </ul>
             )}
 

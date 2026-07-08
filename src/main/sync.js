@@ -1,6 +1,17 @@
-import { readdirSync, statSync } from 'fs'
-import { homedir } from 'os'
+import { app } from 'electron'
+import { execFile } from 'child_process'
+import {
+  readdirSync,
+  statSync,
+  existsSync,
+  writeFileSync,
+  readFileSync,
+  rmSync
+} from 'fs'
+import { homedir, hostname } from 'os'
 import { join } from 'path'
+
+// ===== 使用者層級 Claude 設定（~/.claude） =====
 
 // 使用者層級 Claude 設定目錄（~/.claude）
 export function claudeDir() {
@@ -62,4 +73,181 @@ export function scanLocal() {
     return { key: entry.key, label: entry.label, type: entry.type, exists, childCount }
   })
   return { claudeDir: dir, items }
+}
+
+// ===== Git 同步 repo（Stage 2） =====
+
+// 本機用來存放同步 repo 的目錄（CIM 代管於 userData 下，使用者不需手動管理）
+export function repoDir() {
+  return join(app.getPath('userData'), 'sync-repo')
+}
+
+// 執行 git 子指令。用 execFile 以陣列傳參，避免使用者提供的 remote URL 觸發 shell 引號/注入問題。
+// 回傳 { ok, stdout, stderr }
+function runGit(args, cwd, timeout = 60000) {
+  return new Promise((resolve) => {
+    execFile('git', args, { cwd, timeout, windowsHide: true }, (err, stdout, stderr) => {
+      resolve({
+        ok: !err,
+        stdout: (stdout || '').trim(),
+        stderr: (stderr || (err && err.message) || '').trim()
+      })
+    })
+  })
+}
+
+// 偵測系統 git 是否可用（比照 terminal.js 的 wt.exe 能力探測）。
+// 只快取「可用」結果，讓使用者安裝 git 後回到本頁可重新偵測到。
+let gitProbeCache = null
+export async function probeGit() {
+  if (gitProbeCache && gitProbeCache.available) return gitProbeCache
+  const r = await runGit(['--version'], undefined, 10000)
+  gitProbeCache = r.ok
+    ? { available: true, version: r.stdout.replace(/^git version\s*/i, '') }
+    : { available: false, version: null }
+  return gitProbeCache
+}
+
+const MANIFEST = 'cim-sync.json'
+
+function defaultManifest() {
+  return { schemaVersion: 1, devices: [], items: {} }
+}
+
+function readManifest() {
+  try {
+    return JSON.parse(readFileSync(join(repoDir(), MANIFEST), 'utf8'))
+  } catch {
+    return null
+  }
+}
+
+function writeManifest(m) {
+  writeFileSync(join(repoDir(), MANIFEST), JSON.stringify(m, null, 2) + '\n', 'utf8')
+}
+
+function writeReadme(dir) {
+  const p = join(dir, 'README.md')
+  if (existsSync(p)) return
+  writeFileSync(
+    p,
+    '# CIM 同步 repo\n\n此 repo 由 CIM（Claude Instance Manager）代管，用於跨裝置同步使用者層級的 Claude Code 設定。\n目錄結構與 cim-sync.json 由 CIM 維護，請避免手動修改。\n',
+    'utf8'
+  )
+}
+
+// 設定 repo-local 的提交者身分，避免使用者無全域 git identity 時 commit 失敗
+async function ensureGitIdentity(dir) {
+  const name = await runGit(['config', 'user.name'], dir)
+  if (!name.ok || !name.stdout) await runGit(['config', 'user.name', 'CIM'], dir)
+  const email = await runGit(['config', 'user.email'], dir)
+  if (!email.ok || !email.stdout) await runGit(['config', 'user.email', 'cim@localhost'], dir)
+}
+
+async function currentBranch(dir) {
+  const r = await runGit(['rev-parse', '--abbrev-ref', 'HEAD'], dir)
+  return r.ok && r.stdout && r.stdout !== 'HEAD' ? r.stdout : 'main'
+}
+
+// 連線到私有 repo：clone（或更新既有 clone）、必要時初始化骨架、把本機裝置註冊進 manifest。
+// 不複製任何 ~/.claude 設定、不 materialize（那是 Stage 3/4）。
+// 回傳 { ok, error?, devices? }
+export async function connect({ remoteUrl, deviceId } = {}) {
+  const url = (remoteUrl || '').trim()
+  const id = (deviceId || '').trim()
+  if (!url) return { ok: false, error: '請輸入私有 repo 的 URL。' }
+  if (!id) return { ok: false, error: '請輸入本機裝置名稱。' }
+  if (!/^[A-Za-z0-9._-]+$/.test(id))
+    return { ok: false, error: '裝置名稱僅能包含英數字、底線、點與連字號。' }
+
+  const probe = await probeGit()
+  if (!probe.available) return { ok: false, error: '找不到系統 git，請先安裝 git 後再試。' }
+
+  const dir = repoDir()
+
+  // 取得 / 更新本機 clone
+  if (existsSync(join(dir, '.git'))) {
+    await runGit(['remote', 'set-url', 'origin', url], dir)
+    const f = await runGit(['fetch', 'origin'], dir)
+    if (!f.ok) return { ok: false, error: `git fetch 失敗：${f.stderr}` }
+  } else {
+    if (existsSync(dir)) {
+      try {
+        rmSync(dir, { recursive: true, force: true })
+      } catch {
+        // 移除殘留失敗不致命，clone 會再回報
+      }
+    }
+    const c = await runGit(['clone', url, dir], app.getPath('userData'))
+    if (!c.ok) return { ok: false, error: `git clone 失敗：${c.stderr}` }
+  }
+
+  await ensureGitIdentity(dir)
+
+  // 判斷 repo 是否為空（無任何 commit），並決定要操作的分支
+  const head = await runGit(['rev-parse', '--verify', 'HEAD'], dir)
+  const isEmpty = !head.ok
+  let branch
+  if (isEmpty) {
+    const sym = await runGit(['symbolic-ref', '--short', 'HEAD'], dir)
+    branch = sym.ok && sym.stdout ? sym.stdout : 'main'
+  } else {
+    branch = await currentBranch(dir)
+    await runGit(['pull', '--ff-only', 'origin', branch], dir) // best-effort 對齊遠端
+  }
+
+  // 準備 manifest（空 repo 或遠端無 manifest → 建立預設）
+  let manifest = isEmpty ? null : readManifest()
+  const manifestMissing = !manifest
+  if (!manifest) manifest = defaultManifest()
+
+  // 註冊本機裝置
+  let deviceAdded = false
+  if (!manifest.devices.some((d) => d.id === id)) {
+    manifest.devices.push({ id, label: id })
+    deviceAdded = true
+  }
+
+  // 有變更才寫入 / commit / push
+  if (isEmpty || manifestMissing || deviceAdded) {
+    writeManifest(manifest)
+    writeReadme(dir)
+    await runGit(['add', '-A'], dir)
+    const msg = isEmpty || manifestMissing ? '初始化 CIM 同步 repo' : `註冊裝置 ${id}`
+    await runGit(['commit', '-m', `chore: ${msg}`], dir)
+    const pushArgs = isEmpty ? ['push', '-u', 'origin', branch] : ['push', 'origin', branch]
+    const p = await runGit(pushArgs, dir)
+    if (!p.ok)
+      return { ok: false, error: `git push 失敗（請確認對此 repo 有寫入權限）：${p.stderr}` }
+  }
+
+  return { ok: true, devices: (readManifest() || manifest).devices, branch }
+}
+
+// 目前同步狀態（供 UI 顯示）。cfg 由呼叫端傳入 store.get('sync')。
+// 回傳 { git, connected, remoteUrl, deviceId, hostname, devices }
+export async function getStatus(cfg = {}) {
+  const git = await probeGit()
+  const hasClone = existsSync(join(repoDir(), '.git'))
+  const connected = !!(cfg.remoteUrl && cfg.deviceId && hasClone)
+  const manifest = connected ? readManifest() : null
+  return {
+    git,
+    connected,
+    remoteUrl: cfg.remoteUrl || '',
+    deviceId: cfg.deviceId || '',
+    hostname: hostname().replace(/[^A-Za-z0-9._-]/g, '-'),
+    devices: (manifest && manifest.devices) || []
+  }
+}
+
+// 解除連線：移除本機 repo 快取（不影響遠端 repo 與 ~/.claude）。
+// store 端的 remoteUrl/deviceId 由 ipc 呼叫端清除。
+export function disconnect() {
+  try {
+    rmSync(repoDir(), { recursive: true, force: true })
+  } catch {
+    // 目錄不存在或移除失敗皆視為已解除
+  }
+  return { ok: true }
 }

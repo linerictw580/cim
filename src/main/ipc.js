@@ -12,7 +12,7 @@ import {
 import { getAuthStatus, login, logout, addToPath } from './auth'
 import { getUsage } from './usage'
 import { checkForUpdate, downloadUpdate, installUpdate } from './updater'
-import { scanLocal } from './sync'
+import { scanLocal, getStatus, connect, disconnect } from './sync'
 
 export function registerIpc() {
   // 應用程式版本（與 package.json version 同步）
@@ -107,10 +107,22 @@ export function registerIpc() {
 
   // 跨裝置設定同步
   ipcMain.handle('sync:scanLocal', () => scanLocal()) // 掃描本機 ~/.claude 白名單項目（唯讀）
-  ipcMain.handle('sync:getConfig', () => store.get('sync'))
-  ipcMain.handle('sync:setConfig', (event, cfg) => {
-    store.set('sync', cfg)
-    return true
+  ipcMain.handle('sync:getStatus', () => getStatus(store.get('sync')))
+  ipcMain.handle('sync:connect', async (event, payload) => {
+    const r = await connect(payload)
+    if (r.ok) {
+      store.set('sync', {
+        ...store.get('sync'),
+        remoteUrl: (payload?.remoteUrl || '').trim(),
+        deviceId: (payload?.deviceId || '').trim()
+      })
+    }
+    return r
+  })
+  ipcMain.handle('sync:disconnect', () => {
+    const r = disconnect()
+    store.set('sync', { ...store.get('sync'), remoteUrl: '', deviceId: '' })
+    return r
   })
 
   // 自動更新：手動檢查 / 下載 / 安裝（事件另由 updater 主動推送給 renderer）

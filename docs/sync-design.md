@@ -103,10 +103,14 @@ shared 層  ⊕  devices/<本機裝置>層
 
 ## 6. 傳輸層
 
-- **系統 git**：shell out 到使用者系統的 `git`，沿用 `src/main/auth.js` 的
-  `child_process` exec→Promise、`windowsHide + timeout`、能力探測（比照 `terminal.js` 的 `wt.exe`）idiom。
-- 偵測不到 git 時，UI 引導安裝。
-- Remote 建議為 GitHub 私有 repo；CIM 可協助建立。
+- **系統 git**：shell out 到使用者系統的 `git`（`execFile`，以陣列傳參避免 URL 引號/注入），
+  沿用能力探測（比照 `terminal.js` 的 `wt.exe`）idiom；偵測不到 git 時 UI 引導安裝。
+- **Repo 提供方式**：使用者自行在 GitHub / GitLab 建立**空的私有 repo**，把 URL 貼進 CIM；
+  CIM clone 下來並初始化骨架（`cim-sync.json` + README）。CIM 不取得任何 GitHub token/OAuth。
+- **認證**：沿用使用者系統 git 既有認證（Windows Credential Manager / SSH key）；
+  clone / push 失敗時把 git 錯誤訊息 surface 給使用者。
+- **本機 clone 位置**：CIM 代管於 `userData/sync-repo`，使用者不需手動管理。
+- **分支**：空 repo 沿用遠端預設分支名初始化；非空 repo 以現有分支操作。
 
 ---
 
@@ -131,7 +135,7 @@ shared 層  ⊕  devices/<本機裝置>層
 | # | Stage | 狀態 |
 |---|---|---|
 | 1 | 後端骨架（唯讀）：`sync.js` 白名單 + `scanLocal`、IPC/preload、store `sync` key、Sidebar「同步」+ 唯讀 `SyncPage` | ✅ 完成 |
-| 2 | Git 接管 + 能力探測、clone/init 私有 repo、`cim-sync.json` 讀寫、設定 remote 與本機裝置名 | ⬜ |
+| 2 | Git 接管 + 能力探測、clone/init 私有 repo、`cim-sync.json` 讀寫、設定 remote 與本機裝置名 | ✅ 完成 |
 | 3 | 推送（本機 → repo）：項目分派、複製進 `shared/` 或 `devices/<id>/`、settings base/overlay 拆分、commit + push | ⬜ |
 | 4 | 拉取 + materialize（repo → 本機）：deep-merge、寫入 `~/.claude`、managed-manifest、備份、dry-run 預覽 | ⬜ |
 | 5 | 變更 / 衝突偵測與解決 UI | ⬜ |

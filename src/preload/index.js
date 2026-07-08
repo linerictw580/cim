@@ -53,8 +53,9 @@ contextBridge.exposeInMainWorld('api', {
 
   // 跨裝置設定同步
   syncScanLocal: () => ipcRenderer.invoke('sync:scanLocal'), // 回傳 { claudeDir, items }
-  getSyncConfig: () => ipcRenderer.invoke('sync:getConfig'),
-  setSyncConfig: (cfg) => ipcRenderer.invoke('sync:setConfig', cfg),
+  syncGetStatus: () => ipcRenderer.invoke('sync:getStatus'), // 回傳 { git, connected, remoteUrl, deviceId, hostname, devices }
+  syncConnect: (payload) => ipcRenderer.invoke('sync:connect', payload), // { remoteUrl, deviceId } → { ok, error?, devices? }
+  syncDisconnect: () => ipcRenderer.invoke('sync:disconnect'),
 
   // 複製文字到剪貼簿
   copyText: (text) => clipboard.writeText(text),

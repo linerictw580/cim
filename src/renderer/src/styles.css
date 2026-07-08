@@ -1517,3 +1517,8 @@ body {
   border-color: var(--accent);
 }
 
+.sync-remote-url {
+  word-break: break-all;
+  color: var(--text);
+}
+

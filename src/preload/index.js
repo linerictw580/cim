@@ -51,6 +51,11 @@ contextBridge.exposeInMainWorld('api', {
   // Claude 方案額度用量（/usage），回傳 { ok, session, weekly, scoped, fetchedAt } 或 { ok:false, error }
   getUsage: () => ipcRenderer.invoke('usage:get'),
 
+  // 跨裝置設定同步
+  syncScanLocal: () => ipcRenderer.invoke('sync:scanLocal'), // 回傳 { claudeDir, items }
+  getSyncConfig: () => ipcRenderer.invoke('sync:getConfig'),
+  setSyncConfig: (cfg) => ipcRenderer.invoke('sync:setConfig', cfg),
+
   // 複製文字到剪貼簿
   copyText: (text) => clipboard.writeText(text),
 

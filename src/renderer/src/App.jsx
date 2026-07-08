@@ -4,6 +4,7 @@ import LoginGate from './components/LoginGate'
 import ProjectsPage from './pages/ProjectsPage'
 import CombosPage from './pages/CombosPage'
 import UsagePage from './pages/UsagePage'
+import SyncPage from './pages/SyncPage'
 import SettingsPage from './pages/SettingsPage'
 import UpdateBanner from './components/UpdateBanner'
 
@@ -63,6 +64,7 @@ export default function App() {
           {page === 'projects' && <ProjectsPage />}
           {page === 'combos' && <CombosPage />}
           {page === 'usage' && <UsagePage />}
+          {page === 'sync' && <SyncPage />}
           {page === 'settings' && (
             <SettingsPage auth={auth} onLogout={handleLogout} onRefreshAuth={refreshAuth} />
           )}

@@ -19,6 +19,13 @@ const store = new Store({
       termMaximized: false, // 以最大化開啟（勾選時忽略 cols/rows）
       sort: 'manual', // 專案清單排序：'manual' 加入順序 / 'name' 名稱 / 'recent' 最近啟動
       searchScope: 'name' // 專案搜尋範圍：'name' 名稱 / 'path' 路徑
+    },
+    // sync: 跨裝置設定同步。deviceId 為使用者自訂裝置名稱（如 workPC / homePC），
+    // remoteUrl 為私有 git repo；均於後續階段設定，Stage 1 僅預留欄位。
+    sync: {
+      deviceId: '',
+      remoteUrl: '',
+      lastSyncAt: null
     }
   }
 })

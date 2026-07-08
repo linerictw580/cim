@@ -12,6 +12,7 @@ import {
 import { getAuthStatus, login, logout, addToPath } from './auth'
 import { getUsage } from './usage'
 import { checkForUpdate, downloadUpdate, installUpdate } from './updater'
+import { scanLocal } from './sync'
 
 export function registerIpc() {
   // 應用程式版本（與 package.json version 同步）
@@ -103,6 +104,14 @@ export function registerIpc() {
 
   // Claude 方案額度用量（/usage）
   ipcMain.handle('usage:get', () => getUsage())
+
+  // 跨裝置設定同步
+  ipcMain.handle('sync:scanLocal', () => scanLocal()) // 掃描本機 ~/.claude 白名單項目（唯讀）
+  ipcMain.handle('sync:getConfig', () => store.get('sync'))
+  ipcMain.handle('sync:setConfig', (event, cfg) => {
+    store.set('sync', cfg)
+    return true
+  })
 
   // 自動更新：手動檢查 / 下載 / 安裝（事件另由 updater 主動推送給 renderer）
   ipcMain.handle('updater:check', () => checkForUpdate())

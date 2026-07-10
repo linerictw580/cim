@@ -1588,3 +1588,14 @@ body {
   color: var(--text-dim);
 }
 
+.pull-tag--create,
+.pull-tag--overwrite {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.pull-tag--remove {
+  color: #e06c6c;
+  border-color: #e06c6c;
+}
+

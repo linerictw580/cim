@@ -147,7 +147,7 @@ shared 層  ⊕  devices/<本機裝置>層
 | 1 | 後端骨架（唯讀）：`sync.js` 白名單 + `scanLocal`、IPC/preload、store `sync` key、Sidebar「同步」+ 唯讀 `SyncPage` | ✅ 完成 |
 | 2 | Git 接管 + 能力探測、clone/init 私有 repo、`cim-sync.json` 讀寫、設定 remote 與本機裝置名 | ✅ 完成 |
 | 3 | 推送（本機 → repo）：單元分派（共用 / 僅本機 / 不同步）、複製進 `shared/` 或 `devices/<id>/`、settings 整檔對應 base/overlay、commit + push | ✅ 完成 |
-| 4 | 拉取 + materialize（repo → 本機）：deep-merge、寫入 `~/.claude`、managed-manifest、備份、dry-run 預覽 | ⬜ |
+| 4 | 拉取 + materialize（repo → 本機）：deep-merge、寫入 `~/.claude`、managed-manifest、備份、dry-run 預覽 | ✅ 完成 |
 | 5 | 變更 / 衝突偵測與解決 UI | ⬜ |
 | 6 | 收尾：settings 鍵級分派 UI、新裝置 onboarding、per-item scope 編輯、安全確認 | ⬜ |
 

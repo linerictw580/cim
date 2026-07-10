@@ -58,6 +58,8 @@ contextBridge.exposeInMainWorld('api', {
   syncDisconnect: () => ipcRenderer.invoke('sync:disconnect'),
   syncGetPushPlan: () => ipcRenderer.invoke('sync:getPushPlan'), // 回傳 { deviceId, units }
   syncPush: (assignments) => ipcRenderer.invoke('sync:push', assignments), // [{ path, type, scope }] → { ok, error?, pushed, noChange }
+  syncPreviewPull: () => ipcRenderer.invoke('sync:previewPull'), // 回傳 { ok, actions, pullError }
+  syncApplyPull: () => ipcRenderer.invoke('sync:applyPull'), // 回傳 { ok, created, overwritten, removed, backupDir }
 
   // 複製文字到剪貼簿
   copyText: (text) => clipboard.writeText(text),

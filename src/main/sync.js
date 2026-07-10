@@ -399,3 +399,227 @@ export async function pushUnits(cfg = {}, assignments = []) {
   if (!p.ok) return { ok: false, error: `git push 失敗：${p.stderr}` }
   return { ok: true, pushed: applied, noChange: false }
 }
+
+// ===== 拉取 + materialize：repo → 本機（Stage 4） =====
+
+// 本機 managed-manifest：記錄「哪些單元由 CIM 寫入 ~/.claude」，
+// 讓拉取只更新 / 移除自己管的檔，不誤刪使用者手放的東西。存於 userData（不進 ~/.claude、不會被同步）。
+function managedPath() {
+  return join(app.getPath('userData'), 'sync-managed.json')
+}
+
+function readManaged() {
+  try {
+    return JSON.parse(readFileSync(managedPath(), 'utf8'))
+  } catch {
+    return { paths: [] }
+  }
+}
+
+function writeManaged(m) {
+  writeFileSync(managedPath(), JSON.stringify(m, null, 2) + '\n', 'utf8')
+}
+
+function safeJson(p) {
+  try {
+    return JSON.parse(readFileSync(p, 'utf8'))
+  } catch {
+    return null
+  }
+}
+
+function safeRead(p) {
+  try {
+    return readFileSync(p, 'utf8')
+  } catch {
+    return null
+  }
+}
+
+// 鍵級 deep-merge：物件遞迴合併、陣列整個取代、其餘 overlay 覆寫 base
+function deepMerge(base, overlay) {
+  if (Array.isArray(overlay)) return overlay
+  if (overlay && typeof overlay === 'object' && base && typeof base === 'object' && !Array.isArray(base)) {
+    const out = { ...base }
+    for (const k of Object.keys(overlay)) out[k] = deepMerge(base[k], overlay[k])
+    return out
+  }
+  return overlay === undefined ? base : overlay
+}
+
+// 遞迴比對兩路徑內容是否相同（檔案比 bytes、目錄比項目集合與各項目內容）
+function contentEqual(a, b) {
+  const ea = existsSync(a)
+  const eb = existsSync(b)
+  if (!ea && !eb) return true
+  if (!ea || !eb) return false
+  const da = statSync(a).isDirectory()
+  const db = statSync(b).isDirectory()
+  if (da !== db) return false
+  if (!da) return Buffer.compare(readFileSync(a), readFileSync(b)) === 0
+  const la = readdirSync(a).sort()
+  const lb = readdirSync(b).sort()
+  if (la.length !== lb.length) return false
+  for (let i = 0; i < la.length; i++) {
+    if (la[i] !== lb[i]) return false
+    if (!contentEqual(join(a, la[i]), join(b, lb[i]))) return false
+  }
+  return true
+}
+
+// 本機生效的單元（shared 或本機裝置層有）
+function effectiveUnits(manifest, id) {
+  const items = manifest.items || {}
+  return Object.entries(items)
+    .filter(([, rec]) => rec.shared || (rec.devices || []).includes(id))
+    .map(([path, rec]) => ({ path, rec }))
+}
+
+// 解析單元在 repo 內的來源路徑：本機裝置 overlay 優先，其次 shared（settings.json 另行合併）
+function resolveSource(dir, path, id) {
+  if (path === 'settings.json') return null
+  const deviceP = join(dir, `devices/${id}/${path}`)
+  const sharedP = join(dir, `shared/${path}`)
+  if (existsSync(deviceP)) return deviceP
+  if (existsSync(sharedP)) return sharedP
+  return null
+}
+
+// 計算合併後的 settings.json 物件（shared base + 本機 device overlay）；無來源則回傳 null
+function computeMergedSettings(dir, id, rec) {
+  const bp = join(dir, 'shared/settings.base.json')
+  const op = join(dir, `devices/${id}/settings.device.json`)
+  const hasBase = rec.shared && existsSync(bp)
+  const hasOverlay = (rec.devices || []).includes(id) && existsSync(op)
+  if (!hasBase && !hasOverlay) return null
+  const baseS = hasBase ? safeJson(bp) || {} : {}
+  const overlayS = hasOverlay ? safeJson(op) || {} : {}
+  return deepMerge(baseS, overlayS)
+}
+
+// 計算拉取動作（dry-run，不寫入）。回傳 { actions:[{path,type,action}], nextManaged }
+// action：create / overwrite / unchanged / remove
+function computePullActions(cfg) {
+  const id = (cfg.deviceId || '').trim()
+  const dir = repoDir()
+  const base = claudeDir()
+  const manifest = readManifest() || defaultManifest()
+  const actions = []
+  const nextManaged = []
+
+  for (const { path, rec } of effectiveUnits(manifest, id)) {
+    if (path === 'settings.json') continue
+    const src = resolveSource(dir, path, id)
+    if (!src) continue
+    const target = join(base, path)
+    nextManaged.push(path)
+    let action
+    if (!existsSync(target)) action = 'create'
+    else if (contentEqual(src, target)) action = 'unchanged'
+    else action = 'overwrite'
+    actions.push({ path, type: rec.type || 'file', action })
+  }
+
+  // settings.json（鍵級合併）
+  const settingsRec = (manifest.items || {})['settings.json']
+  if (settingsRec && (settingsRec.shared || (settingsRec.devices || []).includes(id))) {
+    const merged = computeMergedSettings(dir, id, settingsRec)
+    if (merged !== null) {
+      nextManaged.push('settings.json')
+      const target = join(base, 'settings.json')
+      const mergedStr = JSON.stringify(merged, null, 2) + '\n'
+      let action
+      if (!existsSync(target)) action = 'create'
+      else action = safeRead(target) === mergedStr ? 'unchanged' : 'overwrite'
+      actions.push({ path: 'settings.json', type: 'file', action })
+    }
+  }
+
+  // 移除：先前由 CIM 管、現已不生效者（settings.json 不自動移除，避免刪掉整份設定）
+  for (const p of readManaged().paths || []) {
+    if (p === 'settings.json') continue
+    if (!nextManaged.includes(p) && existsSync(join(base, p))) {
+      actions.push({ path: p, type: 'unknown', action: 'remove' })
+    }
+  }
+
+  return { actions, nextManaged }
+}
+
+function timestamp() {
+  const d = new Date()
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`
+}
+
+// 預覽拉取：git pull 對齊遠端後計算動作（不寫入 ~/.claude）
+export async function previewPull(cfg = {}) {
+  const id = (cfg.deviceId || '').trim()
+  if (!id) return { ok: false, error: '尚未設定裝置名稱。' }
+  const dir = repoDir()
+  if (!existsSync(join(dir, '.git'))) return { ok: false, error: '尚未連線到同步 repo。' }
+  const probe = await probeGit()
+  if (!probe.available) return { ok: false, error: '找不到系統 git。' }
+
+  const branch = await currentBranch(dir)
+  const pull = await runGit(['pull', '--ff-only', 'origin', branch], dir)
+  const { actions } = computePullActions(cfg)
+  return { ok: true, actions, pullError: pull.ok ? null : pull.stderr }
+}
+
+// 套用拉取：對齊遠端後，把生效單元 materialize 到 ~/.claude；覆寫 / 移除前先備份原檔。
+// 回傳 { ok, error?, created, overwritten, removed, backupDir }
+export async function applyPull(cfg = {}) {
+  const id = (cfg.deviceId || '').trim()
+  if (!id) return { ok: false, error: '尚未設定裝置名稱。' }
+  const dir = repoDir()
+  if (!existsSync(join(dir, '.git'))) return { ok: false, error: '尚未連線到同步 repo。' }
+  const probe = await probeGit()
+  if (!probe.available) return { ok: false, error: '找不到系統 git。' }
+
+  const branch = await currentBranch(dir)
+  await runGit(['pull', '--ff-only', 'origin', branch], dir) // best-effort 對齊遠端
+
+  const { actions, nextManaged } = computePullActions(cfg)
+  const base = claudeDir()
+  const manifest = readManifest() || defaultManifest()
+  const backupRoot = join(app.getPath('userData'), 'sync-backups', timestamp())
+  let backedUp = false
+  let created = 0
+  let overwritten = 0
+  let removed = 0
+
+  for (const act of actions) {
+    if (act.action === 'unchanged') continue
+    const target = join(base, act.path)
+
+    // 覆寫 / 移除前備份原檔
+    if (existsSync(target)) {
+      copyPath(target, join(backupRoot, act.path))
+      backedUp = true
+    }
+
+    if (act.action === 'remove') {
+      removePath(target)
+      removed++
+      continue
+    }
+
+    if (act.path === 'settings.json') {
+      const merged = computeMergedSettings(dir, id, (manifest.items || {})['settings.json'] || {})
+      if (merged === null) continue
+      mkdirSync(dirname(target), { recursive: true })
+      writeFileSync(target, JSON.stringify(merged, null, 2) + '\n', 'utf8')
+    } else {
+      const src = resolveSource(dir, act.path, id)
+      if (!src) continue
+      copyPath(src, target)
+    }
+
+    if (act.action === 'create') created++
+    else overwritten++
+  }
+
+  writeManaged({ paths: nextManaged })
+  return { ok: true, created, overwritten, removed, backupDir: backedUp ? backupRoot : null }
+}

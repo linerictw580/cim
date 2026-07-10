@@ -12,7 +12,16 @@ import {
 import { getAuthStatus, login, logout, addToPath } from './auth'
 import { getUsage } from './usage'
 import { checkForUpdate, downloadUpdate, installUpdate } from './updater'
-import { scanLocal, getStatus, connect, disconnect, getPushPlan, pushUnits } from './sync'
+import {
+  scanLocal,
+  getStatus,
+  connect,
+  disconnect,
+  getPushPlan,
+  pushUnits,
+  previewPull,
+  applyPull
+} from './sync'
 
 export function registerIpc() {
   // 應用程式版本（與 package.json version 同步）
@@ -126,6 +135,8 @@ export function registerIpc() {
   })
   ipcMain.handle('sync:getPushPlan', () => getPushPlan(store.get('sync')))
   ipcMain.handle('sync:push', (event, assignments) => pushUnits(store.get('sync'), assignments))
+  ipcMain.handle('sync:previewPull', () => previewPull(store.get('sync')))
+  ipcMain.handle('sync:applyPull', () => applyPull(store.get('sync')))
 
   // 自動更新：手動檢查 / 下載 / 安裝（事件另由 updater 主動推送給 renderer）
   ipcMain.handle('updater:check', () => checkForUpdate())

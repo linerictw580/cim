@@ -56,6 +56,8 @@ contextBridge.exposeInMainWorld('api', {
   syncGetStatus: () => ipcRenderer.invoke('sync:getStatus'), // 回傳 { git, connected, remoteUrl, deviceId, hostname, devices }
   syncConnect: (payload) => ipcRenderer.invoke('sync:connect', payload), // { remoteUrl, deviceId } → { ok, error?, devices? }
   syncDisconnect: () => ipcRenderer.invoke('sync:disconnect'),
+  syncGetPushPlan: () => ipcRenderer.invoke('sync:getPushPlan'), // 回傳 { deviceId, units }
+  syncPush: (assignments) => ipcRenderer.invoke('sync:push', assignments), // [{ path, type, scope }] → { ok, error?, pushed, noChange }
 
   // 複製文字到剪貼簿
   copyText: (text) => clipboard.writeText(text),

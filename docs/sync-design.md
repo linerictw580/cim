@@ -94,6 +94,10 @@ shared 層  ⊕  devices/<本機裝置>層
   scope 不含本機的項目（例：僅 `workPC` 的 skill）在本機**不 materialize**。
 - **`settings.json`（鍵級）**：`deepMerge(shared/settings.base.json, devices/<本機>/settings.device.json)`，
   裝置層的鍵覆寫共用層，物件遞迴合併、陣列整個取代。
+- **推送粒度為「單元」**：頂層檔案項目（CLAUDE.md 等）以整檔為單元；目錄項目（skills / agents…）
+  以**每個子項目**為單元，各自可設 共用 / 僅本機 / 不同步 —— 達成「共用個人 skill、公司 skill 留本機」。
+  `none` 只移除本機這台的 overlay，不刪除 `shared/`（跨裝置「取消共用」為後續明確動作）。
+  manifest `items[unitPath] = { shared, devices:[ids], type }` 記錄各單元的分派狀態。
 - **採「複製」而非 symlink**：CIM 為 Windows-only，symlink 需管理員 / 開發者模式，過脆。
 - **managed-manifest（本機）**：CIM 於本機記錄「哪些檔由 CIM 管理」，
   讓拉取只更新 / 移除自己管的檔，不誤刪使用者手放的東西；並能偵測「使用者手改了受管檔」。
@@ -136,7 +140,7 @@ shared 層  ⊕  devices/<本機裝置>層
 |---|---|---|
 | 1 | 後端骨架（唯讀）：`sync.js` 白名單 + `scanLocal`、IPC/preload、store `sync` key、Sidebar「同步」+ 唯讀 `SyncPage` | ✅ 完成 |
 | 2 | Git 接管 + 能力探測、clone/init 私有 repo、`cim-sync.json` 讀寫、設定 remote 與本機裝置名 | ✅ 完成 |
-| 3 | 推送（本機 → repo）：項目分派、複製進 `shared/` 或 `devices/<id>/`、settings base/overlay 拆分、commit + push | ⬜ |
+| 3 | 推送（本機 → repo）：單元分派（共用 / 僅本機 / 不同步）、複製進 `shared/` 或 `devices/<id>/`、settings 整檔對應 base/overlay、commit + push | ✅ 完成 |
 | 4 | 拉取 + materialize（repo → 本機）：deep-merge、寫入 `~/.claude`、managed-manifest、備份、dry-run 預覽 | ⬜ |
 | 5 | 變更 / 衝突偵測與解決 UI | ⬜ |
 | 6 | 收尾：settings 鍵級分派 UI、新裝置 onboarding、per-item scope 編輯、安全確認 | ⬜ |

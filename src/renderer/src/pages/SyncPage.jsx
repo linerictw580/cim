@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import SyncPush from '../components/SyncPush'
 
 // 跨裝置設定同步
 // Stage 2：偵測系統 git、連線到私有 repo（clone / 初始化骨架 / 註冊本機裝置）。
-// 尚未複製 ~/.claude 設定、尚未 materialize（Stage 3/4）。
+// Stage 3：連線後可逐單元推送本機設定到 repo（共用 / 僅本機 / 不同步）。
+// 尚未 materialize（從 repo 套回本機）—— Stage 4。
 export default function SyncPage() {
   const [status, setStatus] = useState(null)
   const [scan, setScan] = useState(null)
@@ -86,8 +88,11 @@ export default function SyncPage() {
                   </span>
                 ))}
               </div>
-              <p className="field__hint">已連線。推送 / 拉取設定將於後續版本開放。</p>
+              <p className="field__hint">已連線。拉取（從 repo 套用到本機）將於後續版本開放。</p>
             </div>
+
+            <SyncPush onChanged={load} />
+
             <div className="field">
               <button className="btn" disabled={busy} onClick={handleDisconnect}>
                 {busy ? '處理中…' : '變更連線'}

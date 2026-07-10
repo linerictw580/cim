@@ -6,10 +6,12 @@ import {
   existsSync,
   writeFileSync,
   readFileSync,
-  rmSync
+  rmSync,
+  mkdirSync,
+  cpSync
 } from 'fs'
 import { homedir, hostname } from 'os'
-import { join } from 'path'
+import { join, dirname } from 'path'
 
 // ===== 使用者層級 Claude 設定（~/.claude） =====
 
@@ -250,4 +252,146 @@ export function disconnect() {
     // 目錄不存在或移除失敗皆視為已解除
   }
   return { ok: true }
+}
+
+// ===== 推送：本機 → repo（Stage 3） =====
+
+// 列舉本機可同步的「單元」：頂層檔案項目 + 目錄項目下的每個子項。
+// 目錄項目（skills / agents…）以「每個子項目」為粒度，達成
+// 「共用個人 skill、公司 skill 留本機」的需求。
+export function listUnits() {
+  const base = claudeDir()
+  const units = []
+  for (const entry of ALLOWLIST) {
+    const full = join(base, entry.key)
+    if (entry.type === 'file') {
+      if (existsSync(full)) {
+        units.push({ path: entry.key, label: entry.label, type: 'file', group: null })
+      }
+    } else {
+      let children = []
+      try {
+        children = readdirSync(full, { withFileTypes: true }).filter((d) => !d.name.startsWith('.'))
+      } catch {
+        children = []
+      }
+      for (const c of children) {
+        units.push({
+          path: `${entry.key}/${c.name}`,
+          label: c.name,
+          type: c.isDirectory() ? 'dir' : 'file',
+          group: entry.key,
+          groupLabel: entry.label
+        })
+      }
+    }
+  }
+  return units
+}
+
+// 單元在 repo 內的相對路徑（settings.json 特別對應到 base/overlay 檔名）
+function repoRelPath(unitPath, scope, deviceId) {
+  if (unitPath === 'settings.json') {
+    return scope === 'shared'
+      ? 'shared/settings.base.json'
+      : `devices/${deviceId}/settings.device.json`
+  }
+  return scope === 'shared' ? `shared/${unitPath}` : `devices/${deviceId}/${unitPath}`
+}
+
+function copyPath(src, dest) {
+  mkdirSync(dirname(dest), { recursive: true })
+  rmSync(dest, { recursive: true, force: true })
+  cpSync(src, dest, { recursive: true })
+}
+
+function removePath(p) {
+  try {
+    rmSync(p, { recursive: true, force: true })
+  } catch {
+    // 不存在即視為已移除
+  }
+}
+
+// 計算推送計畫：列出本機單元與其目前在 repo 的 scope（供 UI 預選）。
+// scope：'shared'（shared/ 內）/ 'device'（本機的 devices/<id>/ 內）/ 'none'。
+export function getPushPlan(cfg = {}) {
+  const id = (cfg.deviceId || '').trim()
+  const manifest = readManifest() || defaultManifest()
+  const items = manifest.items || {}
+  const units = listUnits().map((u) => {
+    const rec = items[u.path]
+    let scope = 'none'
+    if (rec) {
+      if (rec.shared) scope = 'shared'
+      else if ((rec.devices || []).includes(id)) scope = 'device'
+    }
+    return { ...u, scope }
+  })
+  return { deviceId: id, units }
+}
+
+// 依 assignments（[{ path, type, scope }]）把本機單元複製進 repo、更新 manifest、commit + push。
+// scope=shared → shared/<unit>；scope=device → devices/<id>/<unit>；scope=none → 移除本機這台的 overlay。
+// 為避免影響其他裝置，none 不刪除 shared/（跨裝置「取消共用」為後續明確動作）。
+// 回傳 { ok, error?, pushed, noChange }
+export async function pushUnits(cfg = {}, assignments = []) {
+  const id = (cfg.deviceId || '').trim()
+  if (!id) return { ok: false, error: '尚未設定裝置名稱。' }
+  const dir = repoDir()
+  if (!existsSync(join(dir, '.git'))) return { ok: false, error: '尚未連線到同步 repo。' }
+  const probe = await probeGit()
+  if (!probe.available) return { ok: false, error: '找不到系統 git。' }
+
+  const branch = await currentBranch(dir)
+  await runGit(['pull', '--ff-only', 'origin', branch], dir) // best-effort 對齊遠端
+
+  const manifest = readManifest() || defaultManifest()
+  manifest.items = manifest.items || {}
+  const claudeBase = claudeDir()
+  let applied = 0
+
+  for (const a of assignments || []) {
+    const unitPath = a.path
+    const scope = a.scope
+    const src = join(claudeBase, unitPath)
+    const deviceDest = join(dir, repoRelPath(unitPath, 'device', id))
+    const sharedDest = join(dir, repoRelPath(unitPath, 'shared', id))
+    const rec = manifest.items[unitPath] || { shared: false, devices: [], type: a.type || 'file' }
+    rec.type = a.type || rec.type || 'file'
+
+    if (scope === 'shared') {
+      if (!existsSync(src)) continue
+      copyPath(src, sharedDest)
+      removePath(deviceDest) // 本機 overlay 冗餘，移除（只影響本機層）
+      rec.shared = true
+      rec.devices = (rec.devices || []).filter((d) => d !== id)
+      applied++
+    } else if (scope === 'device') {
+      if (!existsSync(src)) continue
+      copyPath(src, deviceDest)
+      rec.devices = Array.from(new Set([...(rec.devices || []), id]))
+      applied++
+    } else {
+      // none：移除本機這台在 repo 內的 overlay（不動 shared）
+      removePath(deviceDest)
+      rec.devices = (rec.devices || []).filter((d) => d !== id)
+    }
+
+    if (!rec.shared && (!rec.devices || rec.devices.length === 0)) {
+      delete manifest.items[unitPath]
+    } else {
+      manifest.items[unitPath] = rec
+    }
+  }
+
+  writeManifest(manifest)
+  await runGit(['add', '-A'], dir)
+  const staged = await runGit(['diff', '--cached', '--name-only'], dir)
+  if (!staged.stdout) return { ok: true, pushed: 0, noChange: true } // 無實質變更，不產生空 commit
+
+  await runGit(['commit', '-m', `chore: 從 ${id} 推送設定`], dir)
+  const p = await runGit(['push', 'origin', branch], dir)
+  if (!p.ok) return { ok: false, error: `git push 失敗：${p.stderr}` }
+  return { ok: true, pushed: applied, noChange: false }
 }

@@ -23,6 +23,9 @@ export function claudeDir() {
 // v1 同步白名單：只有列在這裡的項目會被納入跨裝置同步。
 // 採「白名單」而非「黑名單」——未列出者一律不碰，避免誤同步機密或執行期產物。
 // merge: 'json' 表示該檔以鍵級 deep-merge 合併（shared base + 裝置 overlay），其餘為整檔/整目錄。
+// 註：hook 的「定義」是 settings.json 內的 hooks 鍵，已隨 settings.json 同步；
+// 這裡的 hooks/ 目錄涵蓋的是 hook 定義所呼叫的「腳本檔」（如 notify.ps1），
+// 否則會同步了 hook 設定卻漏掉它要執行的腳本。
 export const ALLOWLIST = [
   { key: 'CLAUDE.md', type: 'file', label: '全域指令 (CLAUDE.md)' },
   { key: 'settings.json', type: 'file', label: '設定 (settings.json)', merge: 'json' },
@@ -31,7 +34,8 @@ export const ALLOWLIST = [
   { key: 'agents', type: 'dir', label: '子代理 (agents/)' },
   { key: 'commands', type: 'dir', label: '自訂指令 (commands/)' },
   { key: 'output-styles', type: 'dir', label: '輸出樣式 (output-styles/)' },
-  { key: 'rules', type: 'dir', label: '規則 (rules/)' }
+  { key: 'rules', type: 'dir', label: '規則 (rules/)' },
+  { key: 'hooks', type: 'dir', label: 'Hooks 腳本 (hooks/)' }
 ]
 
 // 永不同步（含機密 / 機器特定 / 執行期狀態）。白名單機制下掃描本就不會納入這些，

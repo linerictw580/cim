@@ -77,6 +77,12 @@ shared 層  ⊕  devices/<本機裝置>層
 | `commands/` | dir | 整目錄 |
 | `output-styles/` | dir | 整目錄 |
 | `rules/` | dir | 整目錄 |
+| `hooks/` | dir | 整目錄（hook 腳本檔） |
+
+> **Hooks 的兩層**：hook 的「定義」是 `settings.json` 內的 `hooks` 鍵，隨 `settings.json` 同步；
+> hook 定義呼叫的「腳本檔」（如 `hooks/notify.ps1`）則由 `hooks/` 這個白名單項目涵蓋。
+> 兩者要一起同步，否則會同步了 hook 設定卻漏掉它執行的腳本。
+> （`plugins/` 與 `enabledPlugins` 屬另一套安裝機制，較複雜，暫不納入。）
 
 **永不同步**（`NEVER_SYNC`，含機密 / 機器特定 / 執行期狀態）：
 `.credentials.json`（OAuth token）、`settings.local.json`、`CLAUDE.local.md`、
